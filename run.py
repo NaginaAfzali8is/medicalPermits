@@ -25,6 +25,15 @@ def get_location_by_ip(ip):
 
 @app.route("/")
 def home():
+    return "connected"
+    # client_ip = get_client_ip()
+    # if client_ip == "127.0.0.1":  # Localhost testing case
+    #     return "Localhost detected. Use a real IP to test location."
+    # location = get_location_by_ip(client_ip)
+    # return f"Detected IP Address: {client_ip} <br> Location: {location}"
+
+@app.route("/ipAddress")
+def ipAddress():
     client_ip = get_client_ip()
     if client_ip == "127.0.0.1":  # Localhost testing case
         return "Localhost detected. Use a real IP to test location."
