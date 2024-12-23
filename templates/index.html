@@ -49,7 +49,7 @@
             appendMessage(userMessage, 'user');
             chatInput.value = '';
 
-            const response = await fetch('/chatbot', {
+            const response = await fetch('https://medical-permits.vercel.app/chatbot', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

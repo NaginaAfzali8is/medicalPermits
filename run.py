@@ -13,6 +13,8 @@ import datetime
 from werkzeug.utils import secure_filename
 from forms.health_permit_form import HealthPermitForm
 import json
+from flask_cors import CORS
+
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
 # db = client['admin']
@@ -20,6 +22,8 @@ import json
 
 # Initialize Flask app
 app = Flask(__name__)
+
+CORS(app)
 # creates a Flask web app
 app.secret_key = "Nim123??"  # Set a secret key for session management
 connected_clients = set()  # Set to store connected client IDs
@@ -81,7 +85,7 @@ def createForm():
     
 
 
-@app.route('/chatBot')
+@app.route('/chatBotMy')
 def index():
     """Render the main chat page."""
     return render_template('indexMyChatBot.html')
@@ -371,6 +375,7 @@ def delete_request(passport_no):
 @app.route("/customerService")
 def customerService():
     return render_template("index.html")  # Serve the chatbot HTML
+
 
 # Chatbot API endpoint
 @app.route("/chatbot", methods=["POST"])
