@@ -1,6 +1,6 @@
 import requests
 import os
-from openai import OpenAI
+# from openai import OpenAI
 from flask import Flask, redirect, request, jsonify, render_template
 from flask_socketio import SocketIO
 from mongoengine import connect
