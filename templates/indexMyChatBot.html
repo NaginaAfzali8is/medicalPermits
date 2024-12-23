@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot with GPT-4</title>
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    integrity="sha512-VzEu7SdDjEuwpX6jf6CB+Rj7pfRn2wkgmF2wp8ZBGWGshGj6Zw8WIMC7m5hJjQzrKZDyCgMUNB5LMdsV1Z1upQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+<!-- SweetAlert CSS -->
+<link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+<!-- Add Font Awesome CDN -->
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
+
+<script
+    src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #007bff;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+            font-size: 20px;
+        }
+
+        .chat-messages {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            background: #f4f4f9;
+        }
+
+        .chat-message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .user-message {
+            background: #007bff;
+            color: #fff;
+            text-align: right;
+        }
+
+        .bot-message {
+            background: #e4e4e7;
+            color: #000;
+        }
+
+        .chat-input {
+            display: flex;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            font-size: 16px;
+        }
+
+        .chat-input button {
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="chat-header">Chatbot (Powered by GPT-4)</div>
+
+    <div class="chat-messages" id="chat-messages">
+        <!-- Chat messages will be dynamically added here -->
+    </div>
+
+    <div class="chat-input">
+        <input type="text" id="user-input" placeholder="Type your message..." />
+        <button id="send-button">Send</button>
+    </div>
+</div>
+
+<script>
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Handle Send Button Click
+    sendButton.addEventListener('click', () => {
+        const message = userInput.value.trim();
+        if (message) {
+            addMessageToChat('user', message);  // Display user's message
+            userInput.value = ''; // Clear input field
+            sendMessageToServer(message);  // Send message to Flask server
+        }
+    });
+
+    // Handle Enter Key Press
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            sendButton.click();
+        }
+    });
+
+    function addMessageToChat(sender, message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('chat-message');
+        messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+        messageDiv.textContent = message;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;  // Scroll to bottom
+    }
+
+    function sendMessageToServer(message) {
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            addMessageToChat('bot', data.reply);
+        })
+        .catch(error => {
+            addMessageToChat('bot', 'Error: Unable to get a response.');
+            console.error('Error:', error);
+        });
+    }
+
+    var socket = io.connect('http://' + document.domain + ':' + location.port, {
+        timeout: 300000 // 5 minutes
+    });
+
+    socket.on('connect', function () {
+        console.log('Connected to server');
+    });
+    
+    socket.on('response', function (msg) {
+        // Handle the received message
+        alert('Received message: ' + msg);
+    });
+</script>
+
+</body>
+</html>

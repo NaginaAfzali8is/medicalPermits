@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Edit Request</h2>
+<form method="POST" action="/update/{{ passport_no }}" enctype="multipart/form-data" class="row g-3">
+    <div class="col-md-6">
+        <label for="patient_name" class="form-label">Patient Name</label>
+        <input type="text" class="form-control" id="patient_name" name="patient_name" value="{{ data.patient_name }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="position" class="form-label">Position</label>
+        <input type="text" class="form-control" id="position" name="position" value="{{ data.position }}">
+    </div>
+    <div class="col-md-6">
+        <label for="department" class="form-label">Department</label>
+        <select class="form-select" id="department" name="department">
+            <option value="IT" {% if data.department == "IT" %}selected{% endif %}>IT</option>
+            <option value="HR" {% if data.department == "HR" %}selected{% endif %}>HR</option>
+        </select>
+    </div>
+    <div class="col-md-6">
+        <label for="date_of_joining" class="form-label">Date of Joining</label>
+        <input type="date" class="form-control" id="date_of_joining" name="date_of_joining" value="{{ data.date_of_joining }}">
+    </div>
+    <div class="col-md-6">
+        <label for="phone_number" class="form-label">Phone Number</label>
+        <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ data.phone_number }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="email_address" class="form-label">Email Address</label>
+        <input type="email" class="form-control" id="email_address" name="email_address" value="{{ data.email_address }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="passport_no" class="form-label">Passport Number</label>
+        <input type="text" class="form-control" id="passport_no" name="passport_no" value="{{ data.passport_no }}" readonly>
+    </div>
+    <div class="col-md-6">
+        <label for="passport_exp_date" class="form-label">Passport Expiry Date</label>
+        <input type="date" class="form-control" id="passport_exp_date" name="passport_exp_date" value="{{ data.passport_exp_date }}">
+    </div>
+    <div class="col-md-6">
+        <label for="blood_group" class="form-label">Blood Group</label>
+        <input type="text" class="form-control" id="blood_group" name="blood_group" value="{{ data.blood_group }}">
+    </div>
+    <div class="col-md-6">
+        <label for="allergy_history" class="form-label">Allergy History</label>
+        <input type="text" class="form-control" id="allergy_history" name="allergy_history" value="{{ data.allergy_history }}">
+    </div>
+    <div class="col-md-6">
+        <label for="chronic_conditions" class="form-label">Chronic Conditions</label>
+        <input type="text" class="form-control" id="chronic_conditions" name="chronic_conditions" value="{{ data.chronic_conditions }}">
+    </div>
+    <div class="col-md-6">
+        <label for="primary_doctor" class="form-label">Primary Doctor</label>
+        <input type="text" class="form-control" id="primary_doctor" name="primary_doctor" value="{{ data.primary_doctor }}">
+    </div>
+    <div class="col-md-12">
+        <label for="identification_doc" class="form-label">Upload Identification Documents</label>
+        <input type="file" class="form-control" id="identification_doc" name="identification_doc" value="{{ data.identification_doc }}">
+    </div>
+    <div class="col-md-12">
+        <label for="medical_doc" class="form-label">Upload Medical Documents</label>
+        <input type="file" class="form-control" id="medical_doc" name="medical_doc" value="{{ data.medical_doc }}">
+    </div>
+    <div class="col-md-12">
+        <label for="authorization_letter" class="form-label">Upload Authorization Letter</label>
+        <input type="file" class="form-control" id="authorization_letter" name="authorization_letter" value="{{ data.authorization_letter }}">
+    </div>
+    <div class="col-md-12">
+        <button type="submit" class="btn btn-primary">Update</button>
+        <a href="/" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

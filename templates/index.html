@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Permit Chatbot</title>
+    <style>
+        /* Add your CSS styling here */
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <div class="chat-header">Medical Permit Chatbot</div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-message bot-message">
+                Welcome to the Medical Permit Chatbot! Please select an option:<br>
+                1. Guide Line<br>
+                2. Ask a Question<br>
+                3. Start Medical Permit Request
+            </div>
+
+        </div>
+        <div class="chat-footer">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Type your message here...">
+            <input type="file" id="fileInput" style="display: none;">
+            <button class="send-button" id="sendButton">Send</button>
+            <button class="send-button" id="uploadButton">Upload</button>
+        </div>
+    </div>
+    <script>
+        const chatBody = document.getElementById('chatBody');
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function appendMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}-message`;
+            messageDiv.textContent = content;
+            chatBody.appendChild(messageDiv);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const userMessage = chatInput.value.trim();
+            if (!userMessage) return;
+
+            appendMessage(userMessage, 'user');
+            chatInput.value = '';
+
+            const response = await fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: '1', message: userMessage }),
+            });
+
+            const data = await response.json();
+            appendMessage(data.response, 'bot');
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        const fileInput = document.getElementById('fileInput');
+        const uploadButton = document.getElementById('uploadButton');
+
+        async function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) {
+                appendMessage('No file selected.', 'bot');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('user_id', '1'); // Replace '1' with the dynamic user ID
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            appendMessage(data.response, 'bot');
+
+            // Automatically clear the file input and prepare for the next upload
+            fileInput.value = '';
+        }
+
+        uploadButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', uploadFile);
+    </script>
+</body>
+
+</html>
