@@ -106,6 +106,44 @@ def check_email_existence():
         # Handle any database or application errors
         return jsonify({"error": str(e)}), 500
 
+
+
+@app.route('/saveData', methods=['POST'])
+def save_data():
+    """
+    API to save data (name, phone, email) to MongoDB.
+    """
+    try:
+        # Parse JSON data from the request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        # Validate required fields
+        required_fields = ['name', 'phone', 'email']
+        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+
+        if missing_fields:
+            return jsonify({"error": "Missing required fields", "details": missing_fields}), 400
+
+        # Prepare the data to be inserted
+        data['created_at'] = datetime.datetime.now()  # Add timestamp
+        data['status'] = 'pending'  # Optional: Add default status
+
+        # Insert the data into MongoDB
+        result = models.HealthPermitForm.insert_one(data)
+
+        return jsonify({
+            "message": "Data saved successfully",
+            "id": str(result.inserted_id)  # Return the inserted document's ID
+        }), 201
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An error occurred while saving data", "details": str(e)}), 500
+
+
 # @app.route('/check_data_existence', methods=['GET'])
 # def check_data_existence():
 #     # Get query parameters
