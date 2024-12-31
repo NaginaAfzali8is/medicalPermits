@@ -84,6 +84,33 @@ def get_permit_table_data():
         return jsonify({"error": str(e)}), 500
     
 
+@app.route('/getStatus', methods=['GET'])
+def get_status():
+    """
+    API to retrieve the status based on the reference ID (refID).
+    """
+    try:
+        # Get refID from query parameters
+        ref_id = request.args.get('refID')
+
+        if not ref_id:
+            return jsonify({"error": "Reference ID (refID) is required"}), 400
+
+        # Query the database for the record with the given refID
+        record = models.HealthPermitForm.find_one({"reference_number": ref_id}, {"_id": 0, "status": 1})
+
+        if not record:
+            return jsonify({"error": "No record found with the provided refID"}), 404
+
+        # Return the status
+        return jsonify({"status": record["status"]})
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
+
+
+
 @app.route('/existData', methods=['GET'])
 def check_email_existence():
     """
