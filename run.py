@@ -108,6 +108,12 @@ def check_email_existence():
 
 
 
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
 @app.route('/saveData', methods=['POST'])
 def save_data():
     """
@@ -128,7 +134,6 @@ def save_data():
             return jsonify({"error": "Missing required fields", "details": missing_fields}), 400
 
         # Prepare the data to be inserted
-        # data['created_at'] = datetime.datetime.now()  # Add timestamp
         data['status'] = 'pending'  # Optional: Add default status
 
         # Insert the data into MongoDB
@@ -140,9 +145,11 @@ def save_data():
         }), 201
 
     except Exception as e:
-        # Handle unexpected errors
+        # Log the error for debugging
+        logger.error("Error occurred while saving data", exc_info=True)
+        
+        # Return a generic error message
         return jsonify({"error": "An error occurred while saving data", "details": str(e)}), 500
-
 
 # @app.route('/check_data_existence', methods=['GET'])
 # def check_data_existence():
