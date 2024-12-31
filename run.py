@@ -95,12 +95,16 @@ def check_email_existence():
     if not email:
         return jsonify({"error": "Email parameter is required"}), 400
 
-    # Query MongoDB to check if the email exists
-    email_exists = models.HealthPermitForm.objects.filter(email=email).first() is not None
+    try:
+        # Query MongoDB to check if the email exists
+        email_exists = models.HealthPermitForm.find_one({"email": email}) is not None
 
-    # Return the result as a JSON response
-    return jsonify({"exists": email_exists})
-
+        # Return the result as a JSON response
+        return jsonify({"exists": email_exists})
+    
+    except Exception as e:
+        # Handle any database or application errors
+        return jsonify({"error": str(e)}), 500
 
 # @app.route('/check_data_existence', methods=['GET'])
 # def check_data_existence():
