@@ -16,7 +16,7 @@ import json
 from flask_cors import CORS
 import openai
 from datetime import datetime
-from sentence_transformers import SentenceTransformer, util
+# from sentence_transformers import SentenceTransformer, util
 from support import allowed_file, validate_date, get_dynamic_response, is_greeting, is_question
 
 # MongoDB setup
@@ -43,8 +43,6 @@ socketio = SocketIO(app, ping_timeout=300000)  # 5 minutes
 # )
 
 # Replace these with your Botpress details
-# BOTPRESS_API_URL = "https://studio.botpress.cloud/f966cc3b-71f7-4329-a00b-86ac349a8a25/api/v1/tables/PermitTable/records"
-# BOTPRESS_API_KEY = "bp_pat_UdP0hu5O9ufzOv2dRUSje5qmIdhYJL2Dg934"  # Replace with your Botpress API Key
 
 # Botpress API configuration
 
@@ -150,43 +148,43 @@ def get_location_by_ip(ip):
         return f"Error fetching location: {e}"
 
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
-# Load Knowledge Base
-with open("knowledge_base.json", "r") as f:
-    knowledge_base = json.load(f)
+# # Load Knowledge Base
+# with open("knowledge_base.json", "r") as f:
+#     knowledge_base = json.load(f)
 
-faq_entries = knowledge_base["inquiries_received_by_beneficiaries"]  # List of FAQs
+# faq_entries = knowledge_base["inquiries_received_by_beneficiaries"]  # List of FAQs
 
-faq_texts = [
-    entry["request_type"] + " " + entry.get("details", "") for entry in faq_entries
-]
+# faq_texts = [
+#     entry["request_type"] + " " + entry.get("details", "") for entry in faq_entries
+# ]
 
-faq_questions = []
-faq_answers = []
+# faq_questions = []
+# faq_answers = []
 
-for category in knowledge_base["faq"]:
-    for question_item in category["questions"]:
-        faq_questions.append(question_item["question"])
-        faq_answers.append(question_item["answer"])
+# for category in knowledge_base["faq"]:
+#     for question_item in category["questions"]:
+#         faq_questions.append(question_item["question"])
+#         faq_answers.append(question_item["answer"])
 
-faq_question_embeddings = model.encode(faq_questions, convert_to_tensor=True)
+# faq_question_embeddings = model.encode(faq_questions, convert_to_tensor=True)
 
 
-def get_faq_response(user_input):
-    for i, question in enumerate(faq_questions):
-        if user_input.lower() in question.lower(): 
-            return faq_answers[i]
+# def get_faq_response(user_input):
+#     for i, question in enumerate(faq_questions):
+#         if user_input.lower() in question.lower(): 
+#             return faq_answers[i]
 
-    query_embedding = model.encode(user_input, convert_to_tensor=True)
-    similarities = util.pytorch_cos_sim(query_embedding, faq_question_embeddings)[0]
-    best_match_idx = similarities.argmax().item()
+#     query_embedding = model.encode(user_input, convert_to_tensor=True)
+#     similarities = util.pytorch_cos_sim(query_embedding, faq_question_embeddings)[0]
+#     best_match_idx = similarities.argmax().item()
 
-    if similarities[best_match_idx] < 0.5:  
-        return "I'm sorry, I couldn't find a matching answer. Could you please rephrase your question?"
+#     if similarities[best_match_idx] < 0.5:  
+#         return "I'm sorry, I couldn't find a matching answer. Could you please rephrase your question?"
 
-    return faq_answers[best_match_idx]
+#     return faq_answers[best_match_idx]
 
 
 @app.route('/')
@@ -627,35 +625,35 @@ def chatbot():
         )
          permit_data[user_id]["state"] = "main_menu"
      else:
-         faq_response = get_faq_response(user_input)
+        #  faq_response = get_faq_response(user_input)
         
-         if "I'm sorry" in faq_response:
-            gpt_prompt = (
-                f"Answer the user's query based on the context of medical permits:\n\n"
-                f"User Query: {user_input}\n\nAnswer:"
-            )
-            gpt_response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an assistant specializing in medical permits."},
-                    {"role": "user", "content": gpt_prompt},
-                ],
-                max_tokens=150,
-                temperature=0.5,
-            )
-            faq_response = gpt_response["choices"][0]["message"]["content"].strip()
+        #  if "I'm sorry" in faq_response:
+        gpt_prompt = (
+            f"Answer the user's query based on the context of medical permits:\n\n"
+            f"User Query: {user_input}\n\nAnswer:"
+        )
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are an assistant specializing in medical permits."},
+                {"role": "user", "content": gpt_prompt},
+            ],
+            max_tokens=150,
+            temperature=0.5,
+        )
+        faq_response = gpt_response["choices"][0]["message"]["content"].strip()
 
-         response = f"{faq_response}\n\nFeel free to ask another question or type 'menu' to return to the main menu."
+        response = f"{faq_response}\n\nFeel free to ask another question or type 'menu' to return to the main menu."
 
     elif state == "basic_info":
       current_field = permit_data[user_id]["current_field"]
       form = permit_data[user_id]["form"]
       if is_question(user_input):
-        faq_response = get_faq_response(user_input)
-        if "I'm sorry" in faq_response:
-         response = get_dynamic_response(user_input, current_field)
-        else:
-            response = faq_response
+        # faq_response = get_faq_response(user_input)
+        # if "I'm sorry" in faq_response:
+        response = get_dynamic_response(user_input, current_field)
+        # else:
+        #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
         permit_data[user_id]["state"] = "basic_info"
       else:    
@@ -688,11 +686,11 @@ def chatbot():
      current_field = permit_data[user_id]["current_field"]
      form = permit_data[user_id]["form"]
      if is_question(user_input):
-        faq_response = get_faq_response(user_input)
-        if "I'm sorry" in faq_response:
+        # faq_response = get_faq_response(user_input)
+        # if "I'm sorry" in faq_response:
          response = get_dynamic_response(user_input, current_field)
-        else:
-            response = faq_response
+        # else:
+        #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
         permit_data[user_id]["state"] = "medical_info"
      
@@ -723,11 +721,11 @@ def chatbot():
      current_field = permit_data[user_id]["current_field"]
      form = permit_data[user_id]["form"]
      if is_question(user_input):
-        faq_response = get_faq_response(user_input)
-        if "I'm sorry" in faq_response:
-         response = get_dynamic_response(user_input, current_field)
-        else:
-            response = faq_response
+        # faq_response = get_faq_response(user_input)
+        # if "I'm sorry" in faq_response:
+        response = get_dynamic_response(user_input, current_field)
+        # else:
+        #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
         permit_data[user_id]["state"] = "personal_info"
      
@@ -749,12 +747,12 @@ def chatbot():
     elif state == "documents":
      current_field = permit_data[user_id]["current_field"]
      form = permit_data[user_id]["form"]
-     if is_question(user_input):
-        faq_response = get_faq_response(user_input)
-        if "I'm sorry" in faq_response:
-         response = get_dynamic_response(user_input, current_field)
-        else:
-            response = faq_response
+    #  if is_question(user_input):
+    #     faq_response = get_faq_response(user_input)
+    #     if "I'm sorry" in faq_response:
+        response = get_dynamic_response(user_input, current_field)
+        # else:
+        #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
         permit_data[user_id]["state"] = "documents"
      
@@ -772,11 +770,11 @@ def chatbot():
 
     elif state == "confirmation":
      if is_question(user_input):
-        faq_response = get_faq_response(user_input)
-        if "I'm sorry" in faq_response:
-         response = get_dynamic_response(user_input, current_field)
-        else:
-            response = faq_response
+        # faq_response = get_faq_response(user_input)
+        # if "I'm sorry" in faq_response:
+        response = get_dynamic_response(user_input, current_field)
+        # else:
+        #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
         permit_data[user_id]["state"] = "confirmation"
      
