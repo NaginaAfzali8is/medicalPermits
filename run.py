@@ -688,7 +688,7 @@ def chatbot():
      if is_question(user_input):
         # faq_response = get_faq_response(user_input)
         # if "I'm sorry" in faq_response:
-         response = get_dynamic_response(user_input, current_field)
+        response = get_dynamic_response(user_input, current_field)
         # else:
         #     response = faq_response
         response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
@@ -745,50 +745,50 @@ def chatbot():
                 permit_data[user_id]["current_field"] = "Identification Documents"
 
     elif state == "documents":
-     current_field = permit_data[user_id]["current_field"]
-     form = permit_data[user_id]["form"]
-    #  if is_question(user_input):
-    #     faq_response = get_faq_response(user_input)
-    #     if "I'm sorry" in faq_response:
-        response = get_dynamic_response(user_input, current_field)
-        # else:
-        #     response = faq_response
-        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
-        permit_data[user_id]["state"] = "documents"
-     
-     else: 
+        current_field = permit_data[user_id]["current_field"]
+        form = permit_data[user_id]["form"]
+        if is_question(user_input):
+        #     faq_response = get_faq_response(user_input)
+        #     if "I'm sorry" in faq_response:
+            response = get_dynamic_response(user_input, current_field)
+            # else:
+            #     response = faq_response
+            response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+            permit_data[user_id]["state"] = "documents"
+        
+        else: 
 
-        if current_field == "Identification Documents":
-            response = "Please upload your Medical Documents."
-            permit_data[user_id]["current_field"] = "Medical Documents"
-        elif current_field == "Medical Documents":
-            response = "Please upload your Authorization Letter."
-            permit_data[user_id]["current_field"] = "Authorization Letter"
-        elif current_field == "Authorization Letter":
-            response = f"Here’s what you’ve entered so far:\n{json.dumps(form, indent=2)}\n\nConfirm and Submit or Edit your details."
-            permit_data[user_id]["state"] = "confirmation"
+            if current_field == "Identification Documents":
+                response = "Please upload your Medical Documents."
+                permit_data[user_id]["current_field"] = "Medical Documents"
+            elif current_field == "Medical Documents":
+                response = "Please upload your Authorization Letter."
+                permit_data[user_id]["current_field"] = "Authorization Letter"
+            elif current_field == "Authorization Letter":
+                response = f"Here’s what you’ve entered so far:\n{json.dumps(form, indent=2)}\n\nConfirm and Submit or Edit your details."
+                permit_data[user_id]["state"] = "confirmation"
 
     elif state == "confirmation":
-     if is_question(user_input):
-        # faq_response = get_faq_response(user_input)
-        # if "I'm sorry" in faq_response:
-        response = get_dynamic_response(user_input, current_field)
-        # else:
-        #     response = faq_response
-        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
-        permit_data[user_id]["state"] = "confirmation"
-     
-     else: 
-        if user_input.lower() == "confirm":
-            reference_id = f"REF{len(permit_data):05d}"
-            permit_data[user_id]["reference_id"] = reference_id
-            response = f"Your request has been submitted successfully! Your Reference ID is {reference_id}. Use this ID to track the status of your request."
-            permit_data[user_id]["state"] = "completed"
-        elif user_input.lower() == "edit":
-            response = "Which section would you like to edit? (Basic Information, Medical Information, Personal Info, Documents)"
-            permit_data[user_id]["state"] = "edit_section"
-        else:
-            response = "Invalid option. Please type 'Confirm' or 'Edit'."
+        if is_question(user_input):
+            # faq_response = get_faq_response(user_input)
+            # if "I'm sorry" in faq_response:
+            response = get_dynamic_response(user_input, current_field)
+            # else:
+            #     response = faq_response
+            response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+            permit_data[user_id]["state"] = "confirmation"
+        
+        else: 
+            if user_input.lower() == "confirm":
+                reference_id = f"REF{len(permit_data):05d}"
+                permit_data[user_id]["reference_id"] = reference_id
+                response = f"Your request has been submitted successfully! Your Reference ID is {reference_id}. Use this ID to track the status of your request."
+                permit_data[user_id]["state"] = "completed"
+            elif user_input.lower() == "edit":
+                response = "Which section would you like to edit? (Basic Information, Medical Information, Personal Info, Documents)"
+                permit_data[user_id]["state"] = "edit_section"
+            else:
+                response = "Invalid option. Please type 'Confirm' or 'Edit'."
 
     else:
         response = "Something went wrong. Please try again."
