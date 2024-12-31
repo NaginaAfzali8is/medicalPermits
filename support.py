@@ -5,7 +5,7 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask import Flask, request, jsonify
-from sentence_transformers import SentenceTransformer, util
+# from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 
 client = OpenAI(
