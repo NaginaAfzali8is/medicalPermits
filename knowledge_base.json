@@ -1,0 +1,149 @@
+{
+    "inquiries_received_by_beneficiaries": [
+      {
+        "request_type": "Requests for treatment abroad",
+        "status": "Under procedure",
+        "details": "The request is currently under review and is waiting to be presented to the Supreme Medical Committee.",
+        "response": "You will need to submit your medical reports, referral letters, and any letters of support from your physician. Once reviewed, you will be notified of the committee's decision.",
+        "system": "Unified referral program",
+        "notes": "Ensure that all necessary documentation has been submitted to avoid delays."
+      },
+      {
+        "request_type": "Royal Court Transactions - Patients Group",
+        "status": "Under procedure",
+        "details": "The process of booking a hospital appointment abroad is underway. This involves coordination between the Ministry, the attaché, and the healthcare provider.",
+        "response": "Once the appointment is registered in the system, you will be notified via message. Afterward, please contact the General Medical Authority to complete travel and boarding procedures.",
+        "system": "Inter-administrative communication system",
+        "notes": "Prepare your travel documentation, including passport copies and visa requirements, to expedite the process once the appointment is confirmed."
+      },
+      {
+        "request_type": "Eligibility for treatment",
+        "status": "Under procedure",
+        "details": "Your request is awaiting presentation to the Ministry’s Qualification Committee. This committee evaluates eligibility based on the provided medical documentation and treatment requirements.",
+        "response": "Once the committee reviews your request, you will be notified about the decision. Please ensure that your medical documents and referral letters are up-to-date.",
+        "notes": "Eligibility criteria may include the severity of the condition, availability of local treatment options, and the urgency of care required."
+      },
+      {
+        "request_type": "Requests for ambulance transportation from outside the Kingdom",
+        "status": "Referred to the General Medical Authority",
+        "details": "Requests for transportation services, including ambulance support for patients outside the Kingdom, are handled in coordination with the General Medical Authority.",
+        "response": "You can review them and follow up with them. For urgent cases, please contact 937 for direct assistance.",
+        "notes": "Ensure the patient's location and medical condition details are accurately communicated to avoid delays in processing the request."
+      },
+      {
+        "request_type": "Petty cash requests abroad",
+        "status": [
+          "Waiting to request external treatment at the General Medical Authority.",
+          "Still in the process of creating the request at the health attaché.",
+          "Still in the process of creating the request at the General Medical Authority.",
+          "Under procedure || The relevant department will contact you."
+        ],
+        "response": "Follow up with the General Medical Authority or contact 937. Thank you.",
+        "notes": "Petty cash requests are typically for immediate expenses related to medical treatments abroad. Ensure all receipts and justifications are prepared for submission."
+      },
+      {
+        "request_type": "Ticket upgrade requests",
+        "status": "Designated to respond to inquiries regarding transactions received from the Medical Referral Center.",
+        "response": "For better service, contact the call center 937. You will be guided on the next steps and informed in a better way. Thank you.",
+        "system": "Google Sheet schedules for ticket upgrade requests",
+        "notes": "Ensure you provide your request reference number and ticket details when contacting the helpline for quicker assistance."
+      }
+    ],
+    "faq": [
+      {
+        "category": "Form Filling",
+        "questions": [
+          {
+            "question": "Why do I need to fill out this form?",
+            "answer": "This form collects essential information required to process your request and ensure accurate record-keeping."
+          },
+          {
+            "question": "How is this information going to be used?",
+            "answer": "The information you provide will be used to verify your identity, process your medical documentation, and provide necessary services."
+          },
+          {
+            "question": "Who will have access to my data?",
+            "answer": "Your data will only be accessible to authorized personnel involved in processing your request. It will not be shared without your consent."
+          },
+          {
+            "question": "Can I save the form and complete it later?",
+            "answer": "Yes, you can save the form and return to complete it later. Just ensure to save your progress before exiting."
+          },
+          {
+            "question": "What does 'Position' mean?",
+            "answer": "Position refers to your job title or designation, such as Manager, Developer, or Nurse."
+          },
+          {
+            "question": "How do I fill the permit?",
+            "answer": "The steps for submitting a medical permit request are as follows:\n\n1. Provide Basic Information: Full Name, Hospital Name, Preferred Language, and Date of Joining.\n2. Provide Medical Information: Marital Status, Phone Number, Urgency of Request, and Doctor's Name.\n3. Provide Personal Information: Passport Number and Expiry Date.\n4. Upload Required Documents: Identification Documents, Medical Documents, and Authorization Letter (if applicable).\n5. Confirm and Submit: Review all details and confirm your submission."
+          },
+          {
+            "question": "How do I fill the form?",
+            "answer": "The steps for submitting a medical permit request are as follows:\n\n1. Provide Basic Information: Full Name, Hospital Name, Preferred Language, and Date of Joining.\n2. Provide Medical Information: Marital Status, Phone Number, Urgency of Request, and Doctor's Name.\n3. Provide Personal Information: Passport Number and Expiry Date.\n4. Upload Required Documents: Identification Documents, Medical Documents, and Authorization Letter (if applicable).\n5. Confirm and Submit: Review all details and confirm your submission."
+          },
+          {
+            "question": "what is the process?",
+            "answer": "The steps for submitting a medical permit request are as follows:\n\n1. Provide Basic Information: Full Name, Hospital Name, Preferred Language, and Date of Joining.\n2. Provide Medical Information: Marital Status, Phone Number, Urgency of Request, and Doctor's Name.\n3. Provide Personal Information: Passport Number and Expiry Date.\n4. Upload Required Documents: Identification Documents, Medical Documents, and Authorization Letter (if applicable).\n5. Confirm and Submit: Review all details and confirm your submission."
+          }
+          
+        ]
+      },
+      {
+        "category": "Document Submission",
+        "questions": [
+          {
+            "question": "What type of identification documents should I upload?",
+            "answer": "You should upload clear and legible copies of your passport, national ID, or driver's license."
+          },
+          {
+            "question": "Do the uploaded files need to be in PDF format?",
+            "answer": "Yes, PDF is preferred to ensure compatibility and easy review. Other formats like JPEG or PNG may also be acceptable."
+          },
+          {
+            "question": "How do I upload multiple documents?",
+            "answer": "You can select multiple files at once when clicking the upload button, or upload them one by one."
+          },
+          {
+            "question": "Can I review my information before submitting?",
+            "answer": "Yes, you will be given the option to review and confirm your information before final submission."
+          },
+          {
+            "question": "What should I do if I made a mistake in one of the fields?",
+            "answer": "You can go back and correct the mistake before submitting the form. If already submitted, contact the support team."
+          }
+        ]
+      },
+      {
+        "category": "Data Security",
+        "questions": [
+          {
+            "question": "Is my information secure?",
+            "answer": "Yes, we use advanced encryption and data protection measures to ensure your information remains secure."
+          },
+          {
+            "question": "Will my information be shared with third parties?",
+            "answer": "Your information will not be shared without your explicit consent, except as required by law."
+          },
+          {
+            "question": "Can I request the deletion of my information later?",
+            "answer": "Yes, you can request data deletion by contacting the support team, subject to legal and administrative requirements."
+          }
+        ]
+      },
+      {
+        "category": "Guide Line Steps",
+        "questions": [
+          {
+            "question": "What are the steps in the guide line for a medical permit request?",
+            "answer": "The steps for submitting a medical permit request are as follows:\n\n1. Provide Basic Information: Full Name, Hospital Name, Preferred Language, and Date of Joining.\n2. Provide Medical Information: Marital Status, Phone Number, Urgency of Request, and Doctor's Name.\n3. Provide Personal Information: Passport Number and Expiry Date.\n4. Upload Required Documents: Identification Documents, Medical Documents, and Authorization Letter (if applicable).\n5. Confirm and Submit: Review all details and confirm your submission."
+          },
+          {
+            "question": "What documents are needed for the process?",
+            "answer": "You need the following documents: Identification Documents (e.g., ID or Passport), Medical Documents (e.g., reports or referrals), and Authorization Letters if required."
+          }
+        ]
+      }
+
+    ]
+  }
+  

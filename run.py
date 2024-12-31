@@ -14,6 +14,10 @@ from werkzeug.utils import secure_filename
 from forms.health_permit_form import HealthPermitForm
 import json
 from flask_cors import CORS
+import openai
+from datetime import datetime
+from sentence_transformers import SentenceTransformer, util
+from support import allowed_file, validate_date, get_dynamic_response, is_greeting, is_question
 
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
@@ -38,6 +42,93 @@ socketio = SocketIO(app, ping_timeout=300000)  # 5 minutes
 #     api_key=api_key,  # This is the default and can be omitted
 # )
 
+# Replace these with your Botpress details
+# BOTPRESS_API_URL = "https://studio.botpress.cloud/f966cc3b-71f7-4329-a00b-86ac349a8a25/api/v1/tables/PermitTable/records"
+# BOTPRESS_API_KEY = "bp_pat_UdP0hu5O9ufzOv2dRUSje5qmIdhYJL2Dg934"  # Replace with your Botpress API Key
+
+# Botpress API configuration
+
+BOTPRESS_API_URL = os.getenv('BOTPRESS_API_URL')
+ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")  # Replace with your Botpress access token
+BOT_ID = os.getenv("BOT_ID")  # Your Bot ID
+
+
+@app.route('/permitTable', methods=['GET'])
+def get_permit_table_data():
+    """
+    Fetch all data from the PermitTable in Botpress
+    """
+    try:
+        # Set headers for the request
+        headers = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
+            "Content-Type": "application/json",
+            "x-bot-id": BOT_ID
+        }
+
+        # Make the API request to Botpress
+        response = requests.post(BOTPRESS_API_URL, headers=headers)
+
+        # Log the raw response for debugging
+        print("Response Status Code:", response.status_code)
+        print("Response Headers:", response.headers)
+        print("Response Text:", response.text)  # Log the raw response
+
+        # Raise an error if the request fails
+        response.raise_for_status()
+
+        # Parse and return the data as JSON
+        data = response.json()
+        return jsonify(data)
+
+    except requests.exceptions.RequestException as e:
+        # Handle errors gracefully
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/existData', methods=['GET'])
+def check_email_existence():
+    """
+    API to check if a specific email exists in the database.
+    """
+    # Get the email from query parameters
+    email = request.args.get('email')
+
+    if not email:
+        return jsonify({"error": "Email parameter is required"}), 400
+
+    # Query MongoDB to check if the email exists
+    email_exists = HealthPermitForm.objects.filter(email=email).first() is not None
+
+    # Return the result as a JSON response
+    return jsonify({"exists": email_exists})
+
+
+# @app.route('/check_data_existence', methods=['GET'])
+# def check_data_existence():
+#     # Get query parameters
+#     email = request.args.get('email')
+#     passport_no = request.args.get('passport_no')
+#     phone_number = request.args.get('phone_number')
+
+#     # Dictionary to hold the result
+#     result = {
+#         'email_exists': False,
+#         'passport_exists': False,
+#         'phone_number_exists': False
+#     }
+
+#     # Check each field in the database
+#     if email:
+#         result['email_exists'] = db_session.query(User).filter_by(email=email).first() is not None
+#     if passport_no:
+#         result['passport_exists'] = db_session.query(User).filter_by(passport_no=passport_no).first() is not None
+#     if phone_number:
+#         result['phone_number_exists'] = db_session.query(User).filter_by(phone_number=phone_number).first() is not None
+
+#     return jsonify(result)
+
+
 def get_client_ip():
     """Retrieve the client's IP address."""
     if "X-Forwarded-For" in request.headers:
@@ -57,6 +148,46 @@ def get_location_by_ip(ip):
             return "Location not found"
     except Exception as e:
         return f"Error fetching location: {e}"
+
+
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+
+# Load Knowledge Base
+with open("knowledge_base.json", "r") as f:
+    knowledge_base = json.load(f)
+
+faq_entries = knowledge_base["inquiries_received_by_beneficiaries"]  # List of FAQs
+
+faq_texts = [
+    entry["request_type"] + " " + entry.get("details", "") for entry in faq_entries
+]
+
+faq_questions = []
+faq_answers = []
+
+for category in knowledge_base["faq"]:
+    for question_item in category["questions"]:
+        faq_questions.append(question_item["question"])
+        faq_answers.append(question_item["answer"])
+
+faq_question_embeddings = model.encode(faq_questions, convert_to_tensor=True)
+
+
+def get_faq_response(user_input):
+    for i, question in enumerate(faq_questions):
+        if user_input.lower() in question.lower(): 
+            return faq_answers[i]
+
+    query_embedding = model.encode(user_input, convert_to_tensor=True)
+    similarities = util.pytorch_cos_sim(query_embedding, faq_question_embeddings)[0]
+    best_match_idx = similarities.argmax().item()
+
+    if similarities[best_match_idx] < 0.5:  
+        return "I'm sorry, I couldn't find a matching answer. Could you please rephrase your question?"
+
+    return faq_answers[best_match_idx]
+
 
 @app.route('/')
 def home():
@@ -378,32 +509,50 @@ def customerService():
 
 
 # Chatbot API endpoint
+# main chatbot route
+
 @app.route("/chatbot", methods=["POST"])
 def chatbot():
-    user_input = request.json.get("message")
-    user_id = request.json.get("user_id")
+    user_input = request.json.get("message", "").strip()
+    user_id = request.json.get("user_id", "")
 
-    # Ensure user_id is provided
     if not user_id:
         return jsonify({"response": "User ID is required."})
 
-    # Initialize data for new users
     if user_id not in permit_data:
         permit_data[user_id] = {"state": "start", "form": {}, "current_field": None}
 
-    # Extract state, form, and current field
     state = permit_data[user_id]["state"]
-    form = permit_data[user_id]["form"]
-    current_field = permit_data[user_id]["current_field"]
 
-    # Debugging output
-    print(f"Received input: user_id={user_id}, message={user_input}")
-    print(f"Current state: {state}, form data: {form}, current field: {current_field}")
+    if is_greeting(user_input):
+        if user_input.lower() == "menu":
+            response = (
+                "Welcome to the Medical Permit Chatbot! Please select an option:\n"
+                "1. Guide line\n"
+                "2. Ask a Question\n"
+                "3. Start Medical Permit Request"
+            )
+            permit_data[user_id]["state"] = "main_menu"
+        elif state == "start":  
+            response = (
+                "Hello! I'm here to help you with medical permits. "
+                "Please select an option:\n"
+                "1. Guide line\n"
+                "2. Ask a Question\n"
+                "3. Start Medical Permit Request"
+            )
+            permit_data[user_id]["state"] = "main_menu"  
+        else:  
+            response = (
+                "Hello! How can I assist you today? "
+                "Type 'menu' to return to the main menu."
+            )
+        return jsonify({"response": response})
 
-    # Chatbot state logic
+
     if state == "start":
         response = (
-            "Welcome to the Medical Permit Chatbot! Please select an option:\n"
+            "Please select an option:\n"
             "1. Guide line\n"
             "2. Ask a Question\n"
             "3. Start Medical Permit Request"
@@ -411,46 +560,105 @@ def chatbot():
         permit_data[user_id]["state"] = "main_menu"
 
     elif state == "main_menu":
-        if user_input.strip() == "1":
-            response = (
-                "Guide line: This chatbot helps you submit a medical permit request.\n"
-                "1. You will be guided step-by-step to provide required information.\n"
-                "2. You can upload necessary documents.\n"
-                "3. Once completed, you will receive a reference ID to track your request.\n"
-                "Let me know if you’d like to proceed or have questions!"
-            )
-            permit_data[user_id]["state"] = "start"
-        elif user_input.strip() == "2":
+        if user_input == "1":  
+         response = (
+             "Guide Line: This chatbot helps you submit a medical permit request. "
+            "Here’s the process step-by-step:\n\n"
+            "1. **Provide Basic Information**: You’ll be asked to provide your name, hospital details, preferred language, and date of joining.\n"
+            "2. **Provide Medical Information**: You’ll need to share details such as marital status, phone number, urgency of the request, and your doctor’s name.\n"
+            "3. **Provide Personal Information**: This includes your passport number and its expiry date.\n"
+            "4. **Upload Required Documents**: You’ll need to upload the following files:\n"
+            "   - **Identification Documents** (e.g., ID or passport)\n"
+            "   - **Medical Documents** (e.g., medical reports or certificates)\n"
+            "   - **Authorization Letter** (if applicable)\n"
+            "5. **Confirm and Submit**: Once all details and documents are uploaded, you’ll review the information and confirm submission.\n\n"
+            "Type 'menu' to return to the main menu or '3' to start the process now."
+         )
+         permit_data[user_id]["state"] = "guide_line"
+
+
+        elif user_input == "2":  
             response = "Feel free to ask your question. I will do my best to assist you."
             permit_data[user_id]["state"] = "question_answer"
-        elif user_input.strip() == "3":
-            response = (
-                "Welcome! What would you like to do today?\n"
-                "1. Submit a New Permit Request\n"
-                "2. Check Status of an Existing Request\n"
-                "3. Modify/Cancel a Request"
-            )
-            permit_data[user_id]["state"] = "menu"
-        else:
-            response = "Invalid option. Please select 1, 2, or 3."
 
-    elif state == "question_answer":
-        # Here you could integrate OpenAI GPT for question-answering
-        response = f"You asked: {user_input}. Unfortunately, I am unable to answer that right now. Please refer to the guideline or start your request."
-        permit_data[user_id]["state"] = "start"
-
-    elif state == "menu":
-        if user_input.strip() == "1":
+        elif user_input == "3":  
             response = "Great! Let’s start your medical permit request. Please provide your Full Name."
             permit_data[user_id]["state"] = "basic_info"
             permit_data[user_id]["current_field"] = "Patient Name"
-        elif user_input.strip() == "2":
-            response = "Submitting a ticket request is not implemented yet. Please try Request Treatment Abroad."
-            permit_data[user_id]["state"] = "start"
+            
+        elif user_input.lower() == "menu":
+            response = (
+                "Welcome to the Medical Permit Chatbot! Please select an option:\n"
+                "1. Guide line\n"
+                "2. Ask a Question\n"
+                "3. Start Medical Permit Request"
+            )
+            permit_data[user_id]["state"] = "main_menu"
         else:
-            response = "Invalid option. Please select 1 or 2."
+            response = "Invalid option. Please select 1, 2, or 3."
+
+
+    elif state == "guide_line":
+        if user_input.lower() == "menu":
+            response = (
+                "Welcome to the Medical Permit Chatbot! Please select an option:\n"
+                "1. Guide line\n"
+                "2. Ask a Question\n"
+                "3. Start Medical Permit Request"
+            )
+            permit_data[user_id]["state"] = "main_menu"
+        elif user_input == "3":
+            response = "Great! Let’s start your medical permit request. Please provide your Full Name."
+            permit_data[user_id]["state"] = "basic_info"
+            permit_data[user_id]["current_field"] = "Patient Name"
+        else:
+            response = "Invalid input. Type 'menu' to return to the main menu or '3' to start the permit request process."
+
+
+
+
+    elif state == "question_answer":
+     if user_input.lower() == "menu":
+         response = (
+            "Welcome to the Medical Permit Chatbot! Please select an option:\n"
+            "1. Guide line\n"
+            "2. Ask a Question\n"
+            "3. Start Medical Permit Request"
+        )
+         permit_data[user_id]["state"] = "main_menu"
+     else:
+         faq_response = get_faq_response(user_input)
+        
+         if "I'm sorry" in faq_response:
+            gpt_prompt = (
+                f"Answer the user's query based on the context of medical permits:\n\n"
+                f"User Query: {user_input}\n\nAnswer:"
+            )
+            gpt_response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an assistant specializing in medical permits."},
+                    {"role": "user", "content": gpt_prompt},
+                ],
+                max_tokens=150,
+                temperature=0.5,
+            )
+            faq_response = gpt_response["choices"][0]["message"]["content"].strip()
+
+         response = f"{faq_response}\n\nFeel free to ask another question or type 'menu' to return to the main menu."
 
     elif state == "basic_info":
+      current_field = permit_data[user_id]["current_field"]
+      form = permit_data[user_id]["form"]
+      if is_question(user_input):
+        faq_response = get_faq_response(user_input)
+        if "I'm sorry" in faq_response:
+         response = get_dynamic_response(user_input, current_field)
+        else:
+            response = faq_response
+        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+        permit_data[user_id]["state"] = "basic_info"
+      else:    
         if current_field == "Patient Name":
             form["Patient Name"] = user_input
             response = "Enter your Hospital Name."
@@ -464,7 +672,7 @@ def chatbot():
             response = "Enter your Date of Joining (yyyy/mm/dd)."
             permit_data[user_id]["current_field"] = "Date of Joining"
         elif current_field == "Date of Joining":
-            if not validate_date(user_input):  # Validate date
+            if not validate_date(user_input):
                 response = "Invalid date format. Please provide the Date of Joining in yyyy/mm/dd format."
             else:
                 form["Date of Joining"] = user_input
@@ -477,6 +685,19 @@ def chatbot():
             permit_data[user_id]["current_field"] = "Marital Status"
 
     elif state == "medical_info":
+     current_field = permit_data[user_id]["current_field"]
+     form = permit_data[user_id]["form"]
+     if is_question(user_input):
+        faq_response = get_faq_response(user_input)
+        if "I'm sorry" in faq_response:
+         response = get_dynamic_response(user_input, current_field)
+        else:
+            response = faq_response
+        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+        permit_data[user_id]["state"] = "medical_info"
+     
+     else: 
+
         if current_field == "Marital Status":
             form["Marital Status"] = user_input
             response = "Enter your Phone Number (WhatsApp Enabled)."
@@ -499,12 +720,25 @@ def chatbot():
             permit_data[user_id]["current_field"] = "Passport Number"
 
     elif state == "personal_info":
+     current_field = permit_data[user_id]["current_field"]
+     form = permit_data[user_id]["form"]
+     if is_question(user_input):
+        faq_response = get_faq_response(user_input)
+        if "I'm sorry" in faq_response:
+         response = get_dynamic_response(user_input, current_field)
+        else:
+            response = faq_response
+        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+        permit_data[user_id]["state"] = "personal_info"
+     
+     else: 
+
         if current_field == "Passport Number":
             form["Passport Number"] = user_input
             response = "Enter your Passport Expiry Date (yyyy/mm/dd)."
             permit_data[user_id]["current_field"] = "Passport Expiry Date"
         elif current_field == "Passport Expiry Date":
-            if not validate_date(user_input):  # Validate date
+            if not validate_date(user_input):
                 response = "Invalid date format. Please provide the Passport Expiry Date in yyyy/mm/dd format."
             else:
                 form["Passport Expiry Date"] = user_input
@@ -513,6 +747,19 @@ def chatbot():
                 permit_data[user_id]["current_field"] = "Identification Documents"
 
     elif state == "documents":
+     current_field = permit_data[user_id]["current_field"]
+     form = permit_data[user_id]["form"]
+     if is_question(user_input):
+        faq_response = get_faq_response(user_input)
+        if "I'm sorry" in faq_response:
+         response = get_dynamic_response(user_input, current_field)
+        else:
+            response = faq_response
+        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+        permit_data[user_id]["state"] = "documents"
+     
+     else: 
+
         if current_field == "Identification Documents":
             response = "Please upload your Medical Documents."
             permit_data[user_id]["current_field"] = "Medical Documents"
@@ -524,6 +771,16 @@ def chatbot():
             permit_data[user_id]["state"] = "confirmation"
 
     elif state == "confirmation":
+     if is_question(user_input):
+        faq_response = get_faq_response(user_input)
+        if "I'm sorry" in faq_response:
+         response = get_dynamic_response(user_input, current_field)
+        else:
+            response = faq_response
+        response += f"\n\nAfter resolving your query, please continue by providing your {current_field}."
+        permit_data[user_id]["state"] = "confirmation"
+     
+     else: 
         if user_input.lower() == "confirm":
             reference_id = f"REF{len(permit_data):05d}"
             permit_data[user_id]["reference_id"] = reference_id
@@ -536,10 +793,9 @@ def chatbot():
             response = "Invalid option. Please type 'Confirm' or 'Edit'."
 
     else:
-        response = "Something went wrong. Please start again."
+        response = "Something went wrong. Please try again."
         permit_data[user_id]["state"] = "start"
 
-    print(f"Updated permit_data: {permit_data}")
     return jsonify({"response": response})
 
 
@@ -572,4 +828,5 @@ if __name__ == "__main__":
     # app.run(host="0.0.0.0", port=5000, debug=True)
     # socketio.run(app, debug=True, port=8000)
     # socketio.run(app, debug=True, port=8000)
-    socketio.run(app, port=5000)
+    # socketio.run(app, port=9095)
+    socketio.run(app, port=9095, allow_unsafe_werkzeug=True)
