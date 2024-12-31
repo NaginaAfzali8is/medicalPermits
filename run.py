@@ -128,7 +128,7 @@ def save_data():
             return jsonify({"error": "Missing required fields", "details": missing_fields}), 400
 
         # Prepare the data to be inserted
-        data['created_at'] = datetime.datetime.now()  # Add timestamp
+        # data['created_at'] = datetime.datetime.now()  # Add timestamp
         data['status'] = 'pending'  # Optional: Add default status
 
         # Insert the data into MongoDB
