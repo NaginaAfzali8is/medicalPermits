@@ -3,9 +3,7 @@ import os
 # from openai import OpenAI
 from flask import Flask, redirect, request, jsonify, render_template
 from flask_socketio import SocketIO
-from mongoengine import connect
 import models as models
-from flask_wtf import FlaskForm
 from wtforms import StringField, DateField, SelectField, FileField
 from wtforms.validators import DataRequired, Email
 from pymongo import MongoClient
@@ -51,6 +49,7 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")  # Replace with your Botpress access to
 BOT_ID = os.getenv("BOT_ID")  # Your Bot ID
 
 
+# get eprmit table data from botpress 
 @app.route('/permitTable', methods=['GET'])
 def get_permit_table_data():
     """
@@ -84,6 +83,7 @@ def get_permit_table_data():
         return jsonify({"error": str(e)}), 500
     
 
+# get ref status 
 @app.route('/getStatus', methods=['GET'])
 def get_status():
     """
@@ -110,7 +110,7 @@ def get_status():
         return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
 
 
-
+# check if email exist 
 @app.route('/existData', methods=['GET'])
 def check_email_existence():
     """
@@ -133,6 +133,8 @@ def check_email_existence():
         # Handle any database or application errors
         return jsonify({"error": str(e)}), 500
     
+
+    # check if phone exist 
 @app.route('/existPhone', methods=['GET'])
 def check_phone_existence():
     """
@@ -156,6 +158,7 @@ def check_phone_existence():
         return jsonify({"error": str(e)}), 500
 
 
+# check if passport exist 
 @app.route('/existPassport', methods=['GET'])
 def check_passport_existence():
     """
@@ -581,7 +584,7 @@ def create_request():
 
     
 
-@app.route('/read', methods=['GET'])
+@app.route('/getAllUsersData', methods=['GET'])
 def read_requests():
     requests = list(models.HealthPermitForm.find({}, {'_id': 0}))  # Exclude MongoDB ObjectID
     return jsonify(requests), 200
@@ -606,6 +609,23 @@ def edit_request(passport_no):
     return render_template('edit_request.html', passport_no=passport_no, data=data)
 
 
+@app.route('/getUserData/<string:passport_no>', methods=['GET'])
+def getUserData(passport_no):
+    # Find the document in the database based on the passport number
+    data = models.HealthPermitForm.find_one({'passport_no': passport_no})
+    if not data:
+        return jsonify({'error': 'Request not found'}), 404
+
+    # Format dates to 'YYYY-MM-DD' for JSON response
+    if 'date_of_joining' in data:
+        if data['date_of_joining'] and isinstance(data['date_of_joining'], datetime):
+            data['date_of_joining'] = data['date_of_joining'].strftime('%Y-%m-%d')
+    if 'passport_exp_date' in data:
+        if data['passport_exp_date'] and isinstance(data['passport_exp_date'], datetime):
+            data['passport_exp_date'] = data['passport_exp_date'].strftime('%Y-%m-%d')
+
+    # Return the data as JSON
+    return jsonify(data), 200
 
 
 @app.route('/update/<string:passport_no>', methods=['POST'])
