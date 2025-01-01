@@ -17,7 +17,7 @@ from datetime import datetime
 # from sentence_transformers import SentenceTransformer, util
 from support import allowed_file, validate_date, get_dynamic_response, is_greeting, is_question
 import random
-
+import re
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
 # db = client['admin']
@@ -210,6 +210,11 @@ def generate_unique_reference():
             return reference_number
 
 
+        # Function to extract URL from string formatted as "(Image) URL" or "(File) URL"
+def extract_url(file_string):
+    match = re.search(r'\((?:Image|File)\)\s+(https?://[^\s]+)', file_string)
+    return match.group(1) if match else None
+
 
 @app.route('/saveData', methods=['POST'])
 def save_data():
@@ -236,8 +241,20 @@ def save_data():
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
         # Validate patient_name as an object with 'first' and 'last' keys
+        # Validate and merge patient_name
         if not isinstance(data.get('patient_name'), dict) or 'first' not in data['patient_name']:
             return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
+
+        # Merge first and last name into a single string
+        first_name = data['patient_name'].get('first', '').strip()
+        last_name = data['patient_name'].get('last', '').strip()
+        data['patient_name'] = f"{first_name} {last_name}".strip()
+
+        # Extract URLs for file fields
+        data['medical_doc'] = extract_url(data.get('medical_doc', ''))
+        data['identification_doc'] = extract_url(data.get('identification_doc', ''))
+        data['authorization_letter'] = extract_url(data.get('authorization_letter', ''))
+
 
         # Generate a unique reference number
         def generate_unique_reference():
