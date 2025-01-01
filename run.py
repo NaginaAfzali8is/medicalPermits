@@ -124,7 +124,7 @@ def check_email_existence():
 
     try:
         # Query MongoDB to check if the email exists
-        email_exists = models.HealthPermitForm.find_one({"email": email}) is not None
+        email_exists = models.HealthPermitForm.find_one({"email_address": email}) is not None
 
         # Return the result as a JSON response
         return jsonify({"exists": email_exists})
