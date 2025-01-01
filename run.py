@@ -49,6 +49,21 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")  # Replace with your Botpress access to
 BOT_ID = os.getenv("BOT_ID")  # Your Bot ID
 
 
+# const postData = {
+#   name: workflow.name,
+#   phone: workflow.phone,
+#   email: workflow.emailAddress
+# }
+
+# // Make the POST request without specifying headers
+# // Make the POST request
+# const response2 = await axios.post('https://medical-permits.vercel.app/saveData', postData)
+
+# // Save the response in workflow.response
+# workflow.responses = response2.data
+
+
+
 # get eprmit table data from botpress 
 @app.route('/permitTable', methods=['GET'])
 def get_permit_table_data():
@@ -135,6 +150,8 @@ def check_email_existence():
     
 
     # check if phone exist 
+
+
 @app.route('/existPhone', methods=['GET'])
 def check_phone_existence():
     """
@@ -156,6 +173,7 @@ def check_phone_existence():
     except Exception as e:
         # Handle any database or application errors
         return jsonify({"error": str(e)}), 500
+
 
 
 # check if passport exist 
@@ -225,6 +243,8 @@ def save_data():
         # Return a generic error message
         return jsonify({"error": "An error occurred while saving data", "details": str(e)}), 500
 
+
+@app.route('/Treatment_Abroad', methods=['POST'])
 # @app.route('/check_data_existence', methods=['GET'])
 # def check_data_existence():
 #     # Get query parameters
