@@ -696,11 +696,40 @@ def getUserData(passport_no):
     # Return the data as JSON
     return jsonify(data), 200
 
+
 @app.route('/update/<string:passport_no>', methods=['POST'])
 def update_request(passport_no):
-    update_data = {key: request.form[key] for key in request.form if key != 'passport_no'}
-    models.HealthPermitForm.update_one({'passport_no': passport_no}, {'$set': update_data})
-    return redirect('/')
+    try:
+        # Parse JSON data from the request body
+        update_data = request.get_json()
+
+        if not update_data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Remove 'passport_no' from the update data if present
+        update_data.pop('passport_no', None)
+
+        # Perform the update in the database
+        result = models.HealthPermitForm.update_one(
+            {'passport_no': passport_no},
+            {'$set': update_data}
+        )
+
+        # Check if the update was successful
+        if result.modified_count > 0:
+            return jsonify({
+                "message": "Update successful",
+                "updated_fields": update_data,
+                "passport_no": passport_no
+            }), 200
+        else:
+            return jsonify({
+                "message": "No document found with the provided passport_no, or no changes were made",
+                "passport_no": passport_no
+            }), 404
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/delete/<string:passport_no>', methods=['DELETE'])
