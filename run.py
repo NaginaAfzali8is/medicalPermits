@@ -16,6 +16,7 @@ import openai
 from datetime import datetime
 # from sentence_transformers import SentenceTransformer, util
 from support import allowed_file, validate_date, get_dynamic_response, is_greeting, is_question
+import random
 
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
@@ -200,48 +201,58 @@ def check_passport_existence():
         return jsonify({"error": str(e)}), 500
 
 
-import logging
+        # Generate a unique reference number
+def generate_unique_reference():
+    while True:
+        reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
+        existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+        if not existing_entry:
+            return reference_number
 
-# Set up logging
-logging.basicConfig(level=logging.ERROR)
-logger = logging.getLogger(__name__)
+
 
 @app.route('/saveData', methods=['POST'])
 def save_data():
     """
-    API to save data (name, phone, email) to MongoDB.
+    API to save data to MongoDB.
     """
     try:
         # Parse JSON data from the request
         data = request.get_json()
 
         if not data:
-            return jsonify({"error": "Invalid JSON payload"}), 400
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
 
         # Validate required fields
-        required_fields = ['name', 'phone', 'email']
-        missing_fields = [field for field in required_fields if field not in data or not data[field]]
+        required_fields = [
+            'patient_name', 'phone_number', 'email_address', 'country', 'passport_no', 
+            'hospital', 'medical_doc', 'identification_doc',
+            'authorization_letter', 'visaAssistant'
+        ]
+        missing_fields = [field for field in required_fields if field not in data]
 
         if missing_fields:
-            return jsonify({"error": "Missing required fields", "details": missing_fields}), 400
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
-        # Prepare the data to be inserted
-        data['status'] = 'pending'  # Optional: Add default status
+
+        # Assign the generated reference number
+        data['reference_number'] = generate_unique_reference()
+
+        # Set default status
+        data['status'] = 'pending'
 
         # Insert the data into MongoDB
         result = models.HealthPermitForm.insert_one(data)
 
         return jsonify({
             "message": "Data saved successfully",
+            "reference_number": data['reference_number'],  # Return the generated reference number
             "id": str(result.inserted_id)  # Return the inserted document's ID
         }), 201
 
     except Exception as e:
-        # Log the error for debugging
-        logger.error("Error occurred while saving data", exc_info=True)
-        
-        # Return a generic error message
-        return jsonify({"error": "An error occurred while saving data", "details": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+    
 
 
 @app.route('/Treatment_Abroad', methods=['POST'])
