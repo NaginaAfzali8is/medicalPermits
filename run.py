@@ -225,7 +225,8 @@ def save_data():
 
         # Validate required fields
         required_fields = [
-            'patient_name', 'phone_number', 'email_address', 'country', 'passport_no', 
+            'patient_name',  # Should be an object with 'first' and 'last'
+            'phone_number', 'email_address', 'country', 'passport_no', 
             'hospital', 'medical_doc', 'identification_doc',
             'authorization_letter', 'visaAssistant'
         ]
@@ -234,9 +235,25 @@ def save_data():
         if missing_fields:
             return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
+        # Validate patient_name as an object with 'first' and 'last' keys
+        if not isinstance(data.get('patient_name'), dict) or 'first' not in data['patient_name']:
+            return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
+
+        # Generate a unique reference number
+        def generate_unique_reference():
+            while True:
+                reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
+                existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+                if not existing_entry:
+                    return reference_number
 
         # Assign the generated reference number
         data['reference_number'] = generate_unique_reference()
+
+        # Add timestamps
+        now = datetime.utcnow()
+        data['created_at'] = now
+        data['updated_at'] = now
 
         # Set default status
         data['status'] = 'pending'
