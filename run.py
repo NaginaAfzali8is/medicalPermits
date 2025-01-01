@@ -132,7 +132,51 @@ def check_email_existence():
     except Exception as e:
         # Handle any database or application errors
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/existPhone', methods=['GET'])
+def check_phone_existence():
+    """
+    API to check if a specific email exists in the database.
+    """
+    # Get the email from query parameters
+    phone = request.args.get('phone')
 
+    if not phone:
+        return jsonify({"error": "phone parameter is required"}), 400
+
+    try:
+        # Query MongoDB to check if the phone exists
+        phone_exists = models.HealthPermitForm.find_one({"phone_number": phone}) is not None
+
+        # Return the result as a JSON response
+        return jsonify({"exists": phone_exists})
+    
+    except Exception as e:
+        # Handle any database or application errors
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/existPassport', methods=['GET'])
+def check_passport_existence():
+    """
+    API to check if a specific email exists in the database.
+    """
+    # Get the email from query parameters
+    passport = request.args.get('passport')
+
+    if not passport:
+        return jsonify({"error": "passport parameter is required"}), 400
+
+    try:
+        # Query MongoDB to check if the passport exists
+        passport_exists = models.HealthPermitForm.find_one({"passport_no": passport}) is not None
+
+        # Return the result as a JSON response
+        return jsonify({"exists": passport_exists})
+    
+    except Exception as e:
+        # Handle any database or application errors
+        return jsonify({"error": str(e)}), 500
 
 
 import logging
