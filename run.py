@@ -636,6 +636,10 @@ def getUserData(passport_no):
     if not data:
         return jsonify({'error': 'Request not found'}), 404
 
+    # Convert ObjectId to string
+    if '_id' in data:
+        data['_id'] = str(data['_id'])
+
     # Format dates to 'YYYY-MM-DD' for JSON response
     if 'date_of_joining' in data:
         if data['date_of_joining'] and isinstance(data['date_of_joining'], datetime):
@@ -646,7 +650,6 @@ def getUserData(passport_no):
 
     # Return the data as JSON
     return jsonify(data), 200
-
 
 @app.route('/update/<string:passport_no>', methods=['POST'])
 def update_request(passport_no):
