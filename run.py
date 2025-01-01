@@ -285,6 +285,7 @@ def save_data():
         }), 201
 
     except Exception as e:
+        print({"error": str(e)})
         return jsonify({"error": str(e)}), 500
     
 
