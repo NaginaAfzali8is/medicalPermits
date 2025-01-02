@@ -232,13 +232,12 @@ def save_data():
         required_fields = [
             'patient_name',  # Should be an object with 'first' and 'last'
             'phone_number', 'email_address', 'country', 'passport_no', 
-            'hospital', 'medical_doc', 'identification_doc',
-            'authorization_letter', 'visaAssistant'
+            'hospital', 'medical_doc', 'authorization_letter', 'visaAssistant'
         ]
         missing_fields = [field for field in required_fields if field not in data]
 
-        if missing_fields:
-            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+        # if missing_fields:
+        #     return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
 
         # Validate patient_name as an object with 'first' and 'last' keys
         # Validate and merge patient_name
@@ -279,6 +278,7 @@ def save_data():
         result = models.HealthPermitForm.insert_one(data)
 
         return jsonify({
+            "success": True,
             "message": "Data saved successfully",
             "reference_number": data['reference_number'],  # Return the generated reference number
             "id": str(result.inserted_id)  # Return the inserted document's ID
@@ -286,7 +286,10 @@ def save_data():
 
     except Exception as e:
         print({"error": str(e)})
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, Please start the process again",
+            "error": str(e)}), 500
     
 
 @app.route('/saveDataMB', methods=['POST'])
