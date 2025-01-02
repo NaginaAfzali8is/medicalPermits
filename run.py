@@ -18,6 +18,8 @@ from datetime import datetime
 from support import allowed_file, validate_date, get_dynamic_response, is_greeting, is_question
 import random
 import re
+import mimetypes
+
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
 # db = client['admin']
@@ -257,6 +259,29 @@ def save_data():
         first_name = (data['patient_name'].get('first') or '').strip()
         last_name = (data['patient_name'].get('last') or '').strip()
         data['patient_name'] = f"{first_name} {last_name}".strip()
+
+
+        def is_valid_file(url, valid_types):
+            # Extract MIME type based on the file extension
+            mime_type, _ = mimetypes.guess_type(url)
+            return mime_type in valid_types if mime_type else False
+
+        # Define valid MIME types
+        image_types = ['image/jpeg', 'image/png']
+        file_types = ['application/pdf']
+
+        # Extract fields
+        medical_doc_url = data.get('medical_doc', '').split('\n')[0].replace("(Image) ", "").strip()
+        authorization_letter_url = data.get('authorization_letter', '').replace("(File) ", "").strip()
+
+        # Validate medical_doc
+        if not medical_doc_url or not is_valid_file(medical_doc_url, image_types):
+            return jsonify({"fileError": "medical_doc must be a valid file or image"}), 400
+
+        # Validate authorization_letter
+        if not authorization_letter_url or not is_valid_file(authorization_letter_url, file_types):
+            return jsonify({"fileError": "authorization_letter must be a valid file or image"}), 400
+
 
         # Extract URLs for file fields
         data['medical_doc'] = extract_url(data.get('medical_doc', ''))
