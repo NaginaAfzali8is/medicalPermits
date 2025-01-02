@@ -113,13 +113,21 @@ def get_status():
             return jsonify({"error": "Reference ID (refID) is required"}), 400
 
         # Query the database for the record with the given refID
-        record = models.HealthPermitForm.find_one({"reference_number": ref_id}, {"_id": 0, "status": 1})
+        record = models.HealthPermitForm.find_one({"reference_number": ref_id}, {"_id": 0})
 
         if not record:
             return jsonify({"error": "No record found with the provided refID"}), 404
 
+        # Check if the status is "rejected" and include the reject reason if available
+        response = {"status": record["status"]}
+        if record["status"].lower() == "rejected":
+            response["rejectReason"] = record.get("rejectReason", "No reject reason provided")
+
+        # Return the response
+        return jsonify(response)
+
         # Return the status
-        return jsonify({"status": record["status"]})
+        # return jsonify({"status": record["status"]})
 
     except Exception as e:
         # Handle unexpected errors
@@ -788,6 +796,12 @@ def update_request(passport_no):
         # Remove 'passport_no' from the update data if present
         update_data.pop('passport_no', None)
 
+        # Check if 'rejectReason' is part of the update data
+        if 'rejectReason' in update_data:
+            # Update or insert the `rejectReason`
+            reject_reason = update_data.pop('rejectReason')  # Extract the rejectReason value
+            update_data['rejectReason'] = reject_reason  # Ensure rejectReason is updated or added
+
         # Perform the update in the database
         result = models.HealthPermitForm.update_one(
             {'passport_no': passport_no},
@@ -809,6 +823,7 @@ def update_request(passport_no):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/delete/<string:passport_no>', methods=['DELETE'])
