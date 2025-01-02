@@ -289,6 +289,81 @@ def save_data():
         return jsonify({"error": str(e)}), 500
     
 
+@app.route('/saveDataMB', methods=['POST'])
+def save_data_MB():
+    """
+    API to save data to MongoDB.
+    """
+    try:
+        # Parse JSON data from the request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
+
+        # Validate required fields
+        required_fields = [
+            'patient_name',  # Should be an object with 'first' and 'last'
+            'phone_number', 'email_address', 'country', 'passport_no', 
+            'hospital', 'medical_doc', 'identification_doc',
+            'authorization_letter', 'visaAssistant'
+        ]
+        missing_fields = [field for field in required_fields if field not in data]
+
+        if missing_fields:
+            return jsonify({"error": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+
+        # Validate patient_name as an object with 'first' and 'last' keys
+        # Validate and merge patient_name
+        if not isinstance(data.get('patient_name'), dict) or 'first' not in data['patient_name']:
+            return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
+
+        # Merge first and last name into a single string
+        first_name = data['patient_name'].get('first', '').strip()
+        last_name = data['patient_name'].get('last', '').strip()
+        data['patient_name'] = f"{first_name} {last_name}".strip()
+
+        # Extract URLs for file fields
+        # data['medical_doc'] = extract_url(data.get('medical_doc', ''))
+        # data['identification_doc'] = extract_url(data.get('identification_doc', ''))
+        # data['authorization_letter'] = extract_url(data.get('authorization_letter', ''))
+
+
+
+
+        # Generate a unique reference number
+        def generate_unique_reference():
+            while True:
+                reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
+                existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+                if not existing_entry:
+                    return reference_number
+
+        # Assign the generated reference number
+        data["reference_number"] = generate_unique_reference()
+
+        # Add timestamps
+        now = datetime.utcnow()
+        data['created_at'] = now
+        data['updated_at'] = now
+
+        # Set default status
+        data['status'] = 'pending'
+
+        # Insert the data into MongoDB
+        result = models.HealthPermitForm.insert_one(data)
+
+        return jsonify({
+            "message": "Data saved successfully",
+            "reference_number": data['reference_number'],  # Return the generated reference number
+            "id": str(result.inserted_id)  # Return the inserted document's ID
+        }), 201
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
+    
+
 
 @app.route('/Treatment_Abroad', methods=['POST'])
 # @app.route('/check_data_existence', methods=['GET'])
