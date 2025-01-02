@@ -251,8 +251,8 @@ def save_data():
 
         # Validate patient_name as an object with 'first' and 'last' keys
         # Validate and merge patient_name
-        if not isinstance(data.get('patient_name'), dict) or 'first' not in data['patient_name']:
-            return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
+        # if not isinstance(data.get('patient_name'), dict) or 'first' not in data['patient_name']:
+        #     return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
 
         # Merge first and last name into a single string
         # Merge first and last name into a single string, handling None values
