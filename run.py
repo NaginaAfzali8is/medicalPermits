@@ -245,13 +245,13 @@ def save_data():
             return jsonify({"error": "Invalid patient_name. Must be an object with 'first' and optionally 'last' keys."}), 400
 
         # Merge first and last name into a single string
-        first_name = data['patient_name'].get('first', '').strip()
-        last_name = data['patient_name'].get('last', '').strip()
+        # Merge first and last name into a single string, handling None values
+        first_name = (data['patient_name'].get('first') or '').strip()
+        last_name = (data['patient_name'].get('last') or '').strip()
         data['patient_name'] = f"{first_name} {last_name}".strip()
 
         # Extract URLs for file fields
         data['medical_doc'] = extract_url(data.get('medical_doc', ''))
-        data['identification_doc'] = extract_url(data.get('identification_doc', ''))
         data['authorization_letter'] = extract_url(data.get('authorization_letter', ''))
 
 
