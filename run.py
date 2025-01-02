@@ -267,25 +267,27 @@ def save_data():
             return mime_type in valid_types if mime_type else False
 
         # Define valid MIME types
-        image_types = ['image/jpeg', 'image/png']
+        image_types = ['image/jpeg', 'image/png', 'application/pdf']
         file_types = ['application/pdf']
 
+
+
+        # Extract URLs for file fields
+        data['medical_doc'] = extract_url(data.get('medical_doc', ''))
+        data['authorization_letter'] = extract_url(data.get('authorization_letter', ''))
+
         # Extract fields
-        medical_doc_url = data.get('medical_doc', '').split('\n')[0].replace("(Image) ", "").strip()
-        authorization_letter_url = data.get('authorization_letter', '').replace("(File) ", "").strip()
+        medical_doc_url = data.get('medical_doc', '')
+        authorization_letter_url = data.get('authorization_letter', '')
 
         # Validate medical_doc
         if not medical_doc_url or not is_valid_file(medical_doc_url, image_types):
             return jsonify({"success": False, "fileError": "medical_doc must be a valid file or image"}), 400
 
         # Validate authorization_letter
-        if not authorization_letter_url or not is_valid_file(authorization_letter_url, file_types):
+        if not authorization_letter_url or not is_valid_file(authorization_letter_url, image_types):
             return jsonify({"success": False, "fileError": "authorization_letter must be a valid file or image"}), 400
 
-
-        # Extract URLs for file fields
-        data['medical_doc'] = extract_url(data.get('medical_doc', ''))
-        data['authorization_letter'] = extract_url(data.get('authorization_letter', ''))
 
 
         # Generate a unique reference number
