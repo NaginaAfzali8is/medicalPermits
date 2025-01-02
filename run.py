@@ -282,11 +282,11 @@ def save_data():
 
         # Validate medical_doc
         if not medical_doc_url or not is_valid_file(medical_doc_url, image_types):
-            return jsonify({"success": False, "fileError": "medical_doc must be a valid file or image"}), 400
+            return jsonify({"success": False, "fileError": "Medical doc must be a valid file or image"}), 400
 
         # Validate authorization_letter
         if not authorization_letter_url or not is_valid_file(authorization_letter_url, image_types):
-            return jsonify({"success": False, "fileError": "authorization_letter must be a valid file or image"}), 400
+            return jsonify({"success": False, "fileError": "Referral letter must be a valid file or image"}), 400
 
 
 
