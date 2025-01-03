@@ -343,8 +343,7 @@ def save_data_MB():
         required_fields = [
             'patient_name',  # Should be an object with 'first' and 'last'
             'phone_number', 'email_address', 'country', 'passport_no', 
-            'hospital', 'medical_doc', 'identification_doc',
-            'authorization_letter', 'visaAssistant'
+            'hospital', 'medical_doc', 'authorization_letter', 'visaAssistant'
         ]
         missing_fields = [field for field in required_fields if field not in data]
 
