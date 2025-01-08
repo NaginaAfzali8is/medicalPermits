@@ -210,27 +210,27 @@ def check_passport_existence():
 
 
 # check if passport exist 
-@app.route('/existPassport', methods=['GET'])
-def check_passport_existence():
-    """
-    API to check if a specific email exists in the database.
-    """
-    # Get the email from query parameters
-    passport = request.args.get('passport')
+# @app.route('/existPassport', methods=['GET'])
+# def check_passport_existence():
+#     """
+#     API to check if a specific email exists in the database.
+#     """
+#     # Get the email from query parameters
+#     passport = request.args.get('passport')
 
-    if not passport:
-        return jsonify({"error": "passport parameter is required"}), 400
+#     if not passport:
+#         return jsonify({"error": "passport parameter is required"}), 400
 
-    try:
-        # Query MongoDB to check if the passport exists
-        passport_exists = models.HealthPermitForm.find_one({"passport_no": passport}) is not None
+#     try:
+#         # Query MongoDB to check if the passport exists
+#         passport_exists = models.HealthPermitForm.find_one({"passport_no": passport}) is not None
 
-        # Return the result as a JSON response
-        return jsonify({"exists": passport_exists})
+#         # Return the result as a JSON response
+#         return jsonify({"exists": passport_exists})
     
-    except Exception as e:
-        # Handle any database or application errors
-        return jsonify({"error": str(e)}), 500
+#     except Exception as e:
+#         # Handle any database or application errors
+#         return jsonify({"error": str(e)}), 500
 
 
         # Generate a unique reference number
