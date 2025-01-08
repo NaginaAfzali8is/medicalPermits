@@ -187,7 +187,7 @@ def check_phone_existence():
 
 
 @app.route('/existPassport', methods=['GET'])
-def check_phone_existence():
+def check_passport_existence():
     """
     API to check if a specific email exists in the database.
     """
