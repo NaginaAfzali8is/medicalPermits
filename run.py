@@ -233,6 +233,7 @@ def check_passport_existence():
 #         return jsonify({"error": str(e)}), 500
 
 
+
         # Generate a unique reference number
 def generate_unique_reference():
     while True:
@@ -247,6 +248,56 @@ def extract_url(file_string):
     match = re.search(r'\((?:Image|File)\)\s+(https?://[^\s]+)', file_string)
     return match.group(1) if match else None
 
+
+@app.route('/saveNewRecord', methods=['POST'])
+def saveNewRecord():
+    """
+    API to save data to MongoDB.
+    """
+    try:
+        # Parse JSON data from the request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
+
+       
+        # Generate a unique reference number
+        def generate_unique_reference():
+            while True:
+                reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
+                existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+                if not existing_entry:
+                    return reference_number
+
+        # Assign the generated reference number
+        # data['reference_number'] = generate_unique_reference()
+
+        # Add timestamps
+        now = datetime.utcnow()
+        data['created_at'] = now
+        data['updated_at'] = now
+
+        # Set default status
+        data['status'] = 'pending'
+
+        # Insert the data into MongoDB
+        result = models.HealthPermitForm.insert_one(data)
+
+        return jsonify({
+            "success": True,
+            "message": "Data saved successfully",
+            "reference_number": data['reference_number'],  # Return the generated reference number
+            "id": str(result.inserted_id)  # Return the inserted document's ID
+        }), 201
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, Please start the process again",
+            "error": str(e)}), 500
+    
 
 @app.route('/saveData', methods=['POST'])
 def save_data():
@@ -348,6 +399,7 @@ def save_data():
             "message": "Something went wrong, Please start the process again",
             "error": str(e)}), 500
     
+
 
 @app.route('/saveDataMB', methods=['POST'])
 def save_data_MB():
