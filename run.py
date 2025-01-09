@@ -136,6 +136,41 @@ def get_status():
         return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
 
 
+@app.route('/checkData', methods=['GET'])
+def checkData():
+    """
+    API to retrieve the status based on the reference ID (refID) and passport number.
+    """
+    try:
+        # Get refID and passport_no from query parameters
+        ref_id = request.args.get('refID')
+        passport_no = request.args.get('passport_no')
+
+        # if not ref_id or not passport_no:
+        #     return jsonify({"error": "Both Reference ID (refID) and Passport Number (passport_no) are required"}), 400
+
+        # Query the database for the record with the given refID and passport_no
+        record = models.HealthPermitForm.find_one(
+            {"reference_number": ref_id, "passport_no": passport_no},
+            {"_id": 0}
+        )
+
+        if not record:
+            return jsonify({"error": "No record found with the provided refID and passport number"}), 404
+
+        # Check if the status is "rejected" and include the reject reason if available
+        response = {"status": record["status"]}
+        if record["status"].lower() == "rejected":
+            response["rejectReason"] = record.get("rejectReason", "No reject reason provided")
+
+        # Return the response
+        return jsonify(response)
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
+
+
 # check if email exist 
 @app.route('/existData', methods=['GET'])
 def check_email_existence():
