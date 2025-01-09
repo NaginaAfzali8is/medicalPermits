@@ -400,6 +400,58 @@ def save_data():
             "error": str(e)}), 500
     
 
+@app.route('/updateData/<string:passport_no>', methods=['PUT'])
+def update_data(passport_no):
+    """
+    API to update fields in MongoDB, excluding passport_no and passport_number.
+    """
+    try:
+        # Parse JSON data from the request
+        update_data = request.get_json()
+
+        if not update_data:
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
+
+        # Ensure passport_no exists in the database
+        existing_entry = models.HealthPermitForm.find_one({"passport_no": passport_no})
+        if not existing_entry:
+            return jsonify({"error": "Reference number not found."}), 404
+
+        # Exclude reference_number and passport_number from the update data
+        if 'reference_number' in update_data:
+            del update_data['reference_number']
+        if 'passport_number' in update_data:
+            del update_data['passport_number']
+
+        # Add the updated_at timestamp
+        update_data['updated_at'] = datetime.utcnow()
+
+        # Update the record in MongoDB
+        result = models.HealthPermitForm.update_one(
+            {"passport_no": passport_no},
+            {"$set": update_data}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({
+                "success": True,
+                "message": "Data updated successfully"
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "No changes made to the record"
+            }), 200
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, Please try again",
+            "error": str(e)
+        }), 500
+
+
 
 @app.route('/saveDataMB', methods=['POST'])
 def save_data_MB():
