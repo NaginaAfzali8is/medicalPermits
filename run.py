@@ -37,6 +37,13 @@ connected_clients = set()  # Set to store connected client IDs
 socketio = SocketIO(app, ping_timeout=300000)  # 5 minutes
 
 
+# Convert Arabic/Persian numerals to English numerals
+def convert_to_english_numerals(input_string):
+    arabic_to_english = str.maketrans(
+        '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹',
+        '01234567890123456789'
+    )
+    return input_string.translate(arabic_to_english)
 
 
 # get ref status 
@@ -84,16 +91,23 @@ def checkData():
         ref_id = request.args.get('refID')
         passport_no = request.args.get('passport_no')
 
-        # if not ref_id or not passport_no:
-        #     return jsonify({"error": "Both Reference ID (refID) and Passport Number (passport_no) are required"}), 400
+        # Standardize the provided passport number to English numerals
+        standardized_passport_no = convert_to_english_numerals(passport_no)
 
-        # Query the database for the record with the given refID and passport_no
+        # Fetch the record matching the refID
         record = models.HealthPermitForm.find_one(
-            {"reference_number": ref_id, "passport_no": passport_no},
-            {"_id": 0}
+            {"reference_number": ref_id},
+            {"_id": 0, "passport_no": 1}  # Fetch only the `passport_no` field
         )
 
         if not record:
+            return jsonify({"error": "No record found with the provided refID"}), 404
+
+        # Standardize the passport number in the record
+        record_passport_no = convert_to_english_numerals(record["passport_no"])
+
+        # Compare the standardized passport numbers
+        if standardized_passport_no != record_passport_no:
             return jsonify({"error": "No record found with the provided refID and passport number"}), 404
 
         # Check if the status is "rejected" and include the reject reason if available
@@ -195,18 +209,25 @@ def check_passport_existence():
         return jsonify({"error": "passport parameter is required"}), 400
 
     try:
-        # Convert Arabic/Persian numerals to English numerals for standardization
-        def convert_to_english_numerals(input_string):
-            arabic_to_english = str.maketrans(
-                '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹',
-                '01234567890123456789'
-            )
-            return input_string.translate(arabic_to_english)
-
+        # Convert the input passport number to English numerals
         standardized_passport = convert_to_english_numerals(passport)
 
-        # Query MongoDB to check if the standardized passport exists
-        passport_exists = models.HealthPermitForm.find_one({"passport_no": standardized_passport}) is not None
+        # Fetch the record from the database
+        # Fetch only `passport_no` and `_id` fields from the database
+        passport_records = models.HealthPermitForm.find(
+            {},  # Empty filter to fetch all documents
+            {"passport_no": 1, "_id": 1}  # Projection to include only `passport_no` and `_id`
+        )
+
+        # Convert each record's `passport_no` to English numerals for comparison
+        def is_passport_exist(records, standardized_passport):
+            for record in records:
+                db_passport = convert_to_english_numerals(record["passport_no"])
+                if db_passport == standardized_passport:
+                    return True
+            return False
+
+        passport_exists = is_passport_exist(passport_records, standardized_passport)
 
         # Return the result as a JSON response
         return jsonify({"exists": passport_exists})
