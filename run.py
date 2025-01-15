@@ -97,11 +97,10 @@ def checkData():
         # Fetch the record matching the refID
         record = models.HealthPermitForm.find_one(
             {"reference_number": ref_id},
-            {"_id": 0, "passport_no": 1}  # Fetch only the `passport_no` field
         )
 
         if not record:
-            return jsonify({"error": "No record found with the provided refID"}), 404
+            return jsonify({"error": "No record found with the provided refID and passport number"}), 404
 
         # Standardize the passport number in the record
         record_passport_no = convert_to_english_numerals(record["passport_no"])
