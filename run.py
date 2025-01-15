@@ -119,6 +119,7 @@ def checkData():
         return jsonify(response)
 
     except Exception as e:
+        print({"error": str(e)})
         # Handle unexpected errors
         return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
 
