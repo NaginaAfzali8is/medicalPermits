@@ -193,7 +193,7 @@ def check_passport_existenceOld():
     
     except Exception as e:
         # Handle any database or application errors
-        print("error": str(e))
+        print("error", str(e))
         return jsonify({"error": str(e)}), 500
 
 
