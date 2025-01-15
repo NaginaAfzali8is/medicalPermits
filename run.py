@@ -74,6 +74,41 @@ def get_status():
         return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
 
 
+@app.route('/checkData', methods=['GET'])
+def checkData():
+    """
+    API to retrieve the status based on the reference ID (refID) and passport number.
+    """
+    try:
+        # Get refID and passport_no from query parameters
+        ref_id = request.args.get('refID')
+        passport_no = request.args.get('passport_no')
+
+        # if not ref_id or not passport_no:
+        #     return jsonify({"error": "Both Reference ID (refID) and Passport Number (passport_no) are required"}), 400
+
+        # Query the database for the record with the given refID and passport_no
+        record = models.HealthPermitForm.find_one(
+            {"reference_number": ref_id, "passport_no": passport_no},
+            {"_id": 0}
+        )
+
+        if not record:
+            return jsonify({"error": "No record found with the provided refID and passport number"}), 404
+
+        # Check if the status is "rejected" and include the reject reason if available
+        response = {"status": record["status"]}
+        if record["status"].lower() == "rejected":
+            response["rejectReason"] = record.get("rejectReason", "No reject reason provided")
+
+        # Return the response
+        return jsonify(response)
+
+    except Exception as e:
+        # Handle unexpected errors
+        return jsonify({"error": "An error occurred while retrieving the status", "details": str(e)}), 500
+
+
 # check if email exist 
 @app.route('/existData', methods=['GET'])
 def check_email_existence():
@@ -124,7 +159,6 @@ def check_phone_existence():
         return jsonify({"error": str(e)}), 500
 
 
-# check if passport exist 
 @app.route('/existPassportOld', methods=['GET'])
 def check_passport_existenceOld():
     """
@@ -183,6 +217,34 @@ def check_passport_existence():
     
 
 # Generate a unique reference number
+
+# check if passport exist 
+# @app.route('/existPassport', methods=['GET'])
+# def check_passport_existence():
+#     """
+#     API to check if a specific email exists in the database.
+#     """
+#     # Get the email from query parameters
+#     passport = request.args.get('passport')
+
+#     if not passport:
+#         return jsonify({"error": "passport parameter is required"}), 400
+
+#     try:
+#         # Query MongoDB to check if the passport exists
+#         passport_exists = models.HealthPermitForm.find_one({"passport_no": passport}) is not None
+
+#         # Return the result as a JSON response
+#         return jsonify({"exists": passport_exists})
+    
+#     except Exception as e:
+#         # Handle any database or application errors
+#         return jsonify({"error": str(e)}), 500
+
+
+
+        # Generate a unique reference number
+
 def generate_unique_reference():
     while True:
         reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
@@ -196,6 +258,56 @@ def extract_url(file_string):
     match = re.search(r'\((?:Image|File)\)\s+(https?://[^\s]+)', file_string)
     return match.group(1) if match else None
 
+
+@app.route('/saveNewRecord', methods=['POST'])
+def saveNewRecord():
+    """
+    API to save data to MongoDB.
+    """
+    try:
+        # Parse JSON data from the request
+        data = request.get_json()
+
+        if not data:
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
+
+       
+        # Generate a unique reference number
+        def generate_unique_reference():
+            while True:
+                reference_number = f"HP-{random.randint(10000000, 99999999)}"  # 8-digit number
+                existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+                if not existing_entry:
+                    return reference_number
+
+        # Assign the generated reference number
+        # data['reference_number'] = generate_unique_reference()
+
+        # Add timestamps
+        now = datetime.utcnow()
+        data['created_at'] = now
+        data['updated_at'] = now
+
+        # Set default status
+        data['status'] = 'pending'
+
+        # Insert the data into MongoDB
+        result = models.HealthPermitForm.insert_one(data)
+
+        return jsonify({
+            "success": True,
+            "message": "Data saved successfully",
+            "reference_number": data['reference_number'],  # Return the generated reference number
+            "id": str(result.inserted_id)  # Return the inserted document's ID
+        }), 201
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, Please start the process again",
+            "error": str(e)}), 500
+    
 
 @app.route('/saveData', methods=['POST'])
 def save_data():
@@ -297,6 +409,59 @@ def save_data():
             "message": "Something went wrong, Please start the process again",
             "error": str(e)}), 500
     
+
+@app.route('/updateData/<string:passport_no>', methods=['PUT'])
+def update_data(passport_no):
+    """
+    API to update fields in MongoDB, excluding passport_no and passport_number.
+    """
+    try:
+        # Parse JSON data from the request
+        update_data = request.get_json()
+
+        if not update_data:
+            return jsonify({"error": "Invalid input. Please provide JSON data."}), 400
+
+        # Ensure passport_no exists in the database
+        existing_entry = models.HealthPermitForm.find_one({"passport_no": passport_no})
+        if not existing_entry:
+            return jsonify({"error": "Reference number not found."}), 404
+
+        # Exclude reference_number and passport_number from the update data
+        if 'reference_number' in update_data:
+            del update_data['reference_number']
+        if 'passport_number' in update_data:
+            del update_data['passport_number']
+
+        # Add the updated_at timestamp
+        update_data['updated_at'] = datetime.utcnow()
+
+        # Update the record in MongoDB
+        result = models.HealthPermitForm.update_one(
+            {"passport_no": passport_no},
+            {"$set": update_data}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({
+                "success": True,
+                "message": "Data updated successfully"
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "No changes made to the record"
+            }), 200
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, Please try again",
+            "error": str(e)
+        }), 500
+
+
 
 @app.route('/saveDataMB', methods=['POST'])
 def save_data_MB():
