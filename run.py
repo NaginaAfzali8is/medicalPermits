@@ -18,6 +18,10 @@ from datetime import datetime
 import random
 import re
 import mimetypes
+from flask import Flask, request, jsonify
+from datetime import datetime
+import boto3
+
 
 # MongoDB setup
 # client = MongoClient('mongodb://admin:admin123@35.183.49.252:27017/')
@@ -36,6 +40,117 @@ connected_clients = set()  # Set to store connected client IDs
 
 socketio = SocketIO(app, ping_timeout=300000)  # 5 minutes
 
+
+
+
+# AWS S3 Configuration
+AWS_ACCESS_KEY = os.getenv('your_aws_access_key')
+AWS_SECRET_KEY = os.getenv('your_aws_secret_key')
+AWS_BUCKET_NAME = os.getenv('your_s3_bucket_name')
+AWS_REGION = os.getenv('your_aws_region')
+
+def upload_to_s3(file, bucket_name, file_name):
+    """
+    Uploads a file to an S3 bucket and returns the file's public URL.
+    """
+    try:
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_SECRET_KEY,
+            region_name=AWS_REGION
+        )
+
+               # Guess the ContentType from the file name
+        import mimetypes
+        content_type = mimetypes.guess_type(file_name)[0] or 'application/octet-stream'
+
+        s3.upload_fileobj(
+            Fileobj=file,
+            Bucket=bucket_name,
+            Key=file_name,
+            ExtraArgs={
+                'ACL': 'public-read',  # Make the file publicly readable
+                'ContentType': content_type  # Set the correct Content-Type
+            }
+        )
+
+        file_url = f"https://{bucket_name}.s3.{AWS_REGION}.amazonaws.com/{file_name}"
+        return file_url
+    except Exception as e:
+        raise RuntimeError(f"Error uploading to S3: {e}")
+
+        
+
+
+# @app.route('/updateDatafile/<string:passport_no>', methods=['PUT'])
+# def update_datafile(passport_no):
+#     """
+#     API to update fields in MongoDB and upload a file to an S3 bucket.
+#     """
+#     try:
+#         # Parse JSON data and file from the request
+#         update_data = request.form.to_dict()
+#         # Extract files from the request
+#         file_medical_doc = request.files.get('medical_doc')
+#         file_authorization_letter = request.files.get('authorization_letter')
+
+#         if not update_data and not file:
+#             return jsonify({"error": "Invalid input. Please provide data or a file."}), 400
+
+#         # Check if the entry exists in the database
+#         existing_entry = models.HealthPermitForm.find_one({"passport_no": passport_no})
+#         if not existing_entry:
+#             return jsonify({"error": "Data not found."}), 404
+
+#         # Exclude reference_number and passport_number from the update data
+#         update_data.pop('reference_number', None)
+#         update_data.pop('passport_number', None)
+
+#         # Add the updated_at timestamp
+#         update_data['updated_at'] = datetime.utcnow()
+
+#         # Handle file uploads to S3
+#         for file, key in [(file_medical_doc, 'medical_doc'), (file_authorization_letter, 'authorization_letter')]:
+#             if file:
+#                 # Generate a unique filename based on current datetime
+#                 current_datetime = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')  # Include microseconds for uniqueness
+#                 file_extension = file.filename.split('.')[-1]  # Get file extension (e.g., 'jpg', 'pdf')
+#                 file_name = f"{current_datetime}.{file_extension}"  # Combine datetime and extension
+
+#                 try:
+#                     # Upload the file to S3
+#                     file_url = upload_to_s3(file, AWS_BUCKET_NAME, file_name)
+#                     update_data[key] = file_url  # Add the S3 URL to the update data
+#                 except Exception as e:
+#                     return jsonify({"error": f"Failed to upload {key} to S3: {e}"}), 500
+
+#         # Update the record in MongoDB
+#         result = models.HealthPermitForm.update_one(
+#             {"passport_no": passport_no},
+#             {"$set": update_data}
+#         )
+
+#         if result.modified_count > 0:
+#             return jsonify({
+#                 "success": True,
+#                 "message": "Data updated successfully",
+#                 "file_url": update_data.get('medical_doc')
+#             }), 200
+#         else:
+#             return jsonify({
+#                 "success": False,
+#                 "message": "No changes made to the record"
+#             }), 200
+
+#     except Exception as e:
+#         print({"error": str(e)})
+#         return jsonify({
+#             "success": False,
+#             "message": "Something went wrong, please try again.",
+#             "error": str(e)
+#         }), 500
+# # hello 
 
 # Convert Arabic/Persian numerals to English numerals
 def convert_to_english_numerals(input_string):
@@ -150,8 +265,8 @@ def check_email_existence():
     # check if phone exist 
 
 
-@app.route('/existPhone', methods=['GET'])
-def check_phone_existence():
+@app.route('/existPhoneOld', methods=['GET'])
+def check_phone_existenceOld():
     """
     API to check if a specific email exists in the database.
     """
@@ -168,6 +283,52 @@ def check_phone_existence():
         # Return the result as a JSON response
         return jsonify({"exists": phone_exists})
     
+    except Exception as e:
+        # Handle any database or application errors
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/existPhone', methods=['GET'])
+def check_phone_existence():
+    """
+    API to check if a specific passport exists in the database.
+    Passport can be in English numerals or Arabic/Persian numerals.
+    """
+
+    # Get the email from query parameters
+    phone = request.args.get('phone')
+
+    if not phone:
+        return jsonify({"error": "passport parameter is required"}), 400
+
+    try:
+        # Convert the input passport number to English numerals
+        standardized_phone = convert_to_english_numerals(phone)
+            # Remove any spaces in the phone number
+        standardized_phone = standardized_phone.replace(" ", "")
+        # Ensure the phone number starts with a '+' character
+        if not standardized_phone.startswith('+'):
+            standardized_phone = f'+{standardized_phone}'
+
+        # Fetch the record from the database
+        # Fetch only `passport_no` and `_id` fields from the database
+        phone_records = list(models.HealthPermitForm.find(
+            {"phone_number": {"$exists": True}},  # Filter to include only documents with `phone_number`
+            {"phone_number": 1, "_id": 1}  # Projection to include only `phone_number` and `_id`
+        ))
+
+        # Convert each record's `passport_no` to English numerals for comparison
+        def is_phone_exist(records, standardized_phone):
+            for record in records:
+                db_passport = convert_to_english_numerals(record["phone_number"])
+                if db_passport == standardized_phone:
+                    return True
+            return False
+
+        phone_exists = is_phone_exist(phone_records, standardized_phone)
+
+        # Return the result as a JSON response
+        return jsonify({"exists": phone_exists})
     except Exception as e:
         # Handle any database or application errors
         return jsonify({"error": str(e)}), 500
@@ -432,8 +593,80 @@ def save_data():
             "error": str(e)}), 500
     
 
-@app.route('/updateData/<string:passport_no>', methods=['PUT'])
-def update_data(passport_no):
+@app.route('/updateData/<string:reference_number>', methods=['PUT'])
+def update_datafile(reference_number):
+    """
+    API to update fields in MongoDB and upload a file to an S3 bucket.
+    """
+    try:
+        # Parse JSON data and file from the request
+        update_data = request.form.to_dict()
+        # Extract files from the request
+        file_medical_doc = request.files.get('medical_doc')
+        file_authorization_letter = request.files.get('authorization_letter')
+
+        if not update_data and not file:
+            return jsonify({"error": "Invalid input. Please provide data or a file."}), 400
+
+        # Check if the entry exists in the database
+        existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+        if not existing_entry:
+            return jsonify({"error": "Data not found."}), 404
+
+        # Exclude reference_number and passport_number from the update data
+        update_data.pop('reference_number', None)
+        update_data.pop('passport_number', None)
+
+        # Add the updated_at timestamp
+        update_data['updated_at'] = datetime.utcnow()
+
+        if file_medical_doc or file_authorization_letter:
+            # Handle file uploads to S3
+            for file, key in [(file_medical_doc, 'medical_doc'), (file_authorization_letter, 'authorization_letter')]:
+                if file:
+                    # Generate a unique filename based on current datetime
+                    current_datetime = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')  # Include microseconds for uniqueness
+                    file_extension = file.filename.split('.')[-1]  # Get file extension (e.g., 'jpg', 'pdf')
+                    file_name = f"{current_datetime}.{file_extension}"  # Combine datetime and extension
+
+                    try:
+                        # Upload the file to S3
+                        file_url = upload_to_s3(file, AWS_BUCKET_NAME, file_name)
+                        update_data[key] = file_url  # Add the S3 URL to the update data
+                    except Exception as e:
+                        return jsonify({"error": f"Failed to upload {key} to S3: {e}"}), 500
+
+        # Update the record in MongoDB
+        result = models.HealthPermitForm.update_one(
+            {"reference_number": reference_number},
+            {"$set": update_data}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({
+                "success": True,
+                "message": "Data updated successfully",
+                "file_url": update_data.get('medical_doc')
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "No changes made to the record"
+            }), 200
+
+    except Exception as e:
+        print({"error": str(e)})
+        return jsonify({
+            "success": False,
+            "message": "Something went wrong, please try again.",
+            "error": str(e)
+        }), 500
+
+
+
+
+@app.route('/updateDatawithoutFile/<string:passport_no>', methods=['PUT'])
+def update_datawithoutFile(passport_no):
     """
     API to update fields in MongoDB, excluding passport_no and passport_number.
     """
