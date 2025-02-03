@@ -600,7 +600,8 @@ def save_data():
             "success": False,
             "message": "Something went wrong, Please start the process again",
             "error": str(e)}), 500
-    
+
+
 
 @app.route('/updateData/<string:reference_number>', methods=['PUT'])
 def update_datafile(reference_number):
@@ -610,12 +611,11 @@ def update_datafile(reference_number):
     try:
         # Parse JSON data and file from the request
         update_data = request.form.to_dict()
-        # Extract files from the request
         file_medical_doc = request.files.get('medical_doc')
         file_authorization_letter = request.files.get('authorization_letter')
 
-        if not update_data and not file:
-            return jsonify({"error": "Invalid input. Please provide data or a file."}), 400
+        # if not update_data and not (file_medical_doc or file_authorization_letter):
+        #     return jsonify({"error": "Invalid input. Please provide data or a file."}), 400
 
         # Check if the entry exists in the database
         existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
@@ -626,6 +626,19 @@ def update_datafile(reference_number):
         update_data.pop('reference_number', None)
         update_data.pop('passport_number', None)
 
+        # Rename fields to match the required format
+        rename_fields = {
+            "patientName": "patient_name",
+            "phoneNumber": "phone_number",
+            "emailAddress": "email_address",
+           "passportNo" : "passport_no",
+           "referenceNumber" : "reference_number",
+        }
+        
+        for old_key, new_key in rename_fields.items():
+            if old_key in update_data:
+                update_data[new_key] = update_data.pop(old_key)
+
         # Add the updated_at timestamp
         update_data['updated_at'] = datetime.utcnow()
 
@@ -634,9 +647,9 @@ def update_datafile(reference_number):
             for file, key in [(file_medical_doc, 'medical_doc'), (file_authorization_letter, 'authorization_letter')]:
                 if file:
                     # Generate a unique filename based on current datetime
-                    current_datetime = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')  # Include microseconds for uniqueness
-                    file_extension = file.filename.split('.')[-1]  # Get file extension (e.g., 'jpg', 'pdf')
-                    file_name = f"{current_datetime}.{file_extension}"  # Combine datetime and extension
+                    current_datetime = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
+                    file_extension = file.filename.split('.')[-1]
+                    file_name = f"{current_datetime}.{file_extension}"
 
                     try:
                         # Upload the file to S3
@@ -664,12 +677,78 @@ def update_datafile(reference_number):
             }), 200
 
     except Exception as e:
-        print({"error": str(e)})
-        return jsonify({
-            "success": False,
-            "message": "Something went wrong, please try again.",
-            "error": str(e)
-        }), 500
+        return jsonify({"error": str(e)}), 500
+     
+
+
+# @app.route('/updateData/<string:reference_number>', methods=['PUT'])
+# def update_datafile(reference_number):
+#     """
+#     API to update fields in MongoDB and upload a file to an S3 bucket.
+#     """
+#     try:
+#         # Parse JSON data and file from the request
+#         update_data = request.form.to_dict()
+#         # Extract files from the request
+#         file_medical_doc = request.files.get('medical_doc')
+#         file_authorization_letter = request.files.get('authorization_letter')
+
+#         if not update_data and not file:
+#             return jsonify({"error": "Invalid input. Please provide data or a file."}), 400
+
+#         # Check if the entry exists in the database
+#         existing_entry = models.HealthPermitForm.find_one({"reference_number": reference_number})
+#         if not existing_entry:
+#             return jsonify({"error": "Data not found."}), 404
+
+#         # Exclude reference_number and passport_number from the update data
+#         update_data.pop('reference_number', None)
+#         update_data.pop('passport_number', None)
+
+#         # Add the updated_at timestamp
+#         update_data['updated_at'] = datetime.utcnow()
+
+#         if file_medical_doc or file_authorization_letter:
+#             # Handle file uploads to S3
+#             for file, key in [(file_medical_doc, 'medical_doc'), (file_authorization_letter, 'authorization_letter')]:
+#                 if file:
+#                     # Generate a unique filename based on current datetime
+#                     current_datetime = datetime.utcnow().strftime('%Y%m%d%H%M%S%f')  # Include microseconds for uniqueness
+#                     file_extension = file.filename.split('.')[-1]  # Get file extension (e.g., 'jpg', 'pdf')
+#                     file_name = f"{current_datetime}.{file_extension}"  # Combine datetime and extension
+
+#                     try:
+#                         # Upload the file to S3
+#                         file_url = upload_to_s3(file, AWS_BUCKET_NAME, file_name)
+#                         update_data[key] = file_url  # Add the S3 URL to the update data
+#                     except Exception as e:
+#                         return jsonify({"error": f"Failed to upload {key} to S3: {e}"}), 500
+
+#         # Update the record in MongoDB
+#         result = models.HealthPermitForm.update_one(
+#             {"reference_number": reference_number},
+#             {"$set": update_data}
+#         )
+
+#         if result.modified_count > 0:
+#             return jsonify({
+#                 "success": True,
+#                 "message": "Data updated successfully",
+#                 "file_url": update_data.get('medical_doc')
+#             }), 200
+#         else:
+#             return jsonify({
+#                 "success": False,
+#                 "message": "No changes made to the record"
+#             }), 200
+
+#     except Exception as e:
+#         print({"error": str(e)})
+#         return jsonify({
+#             "success": False,
+#             "message": "Something went wrong, please try again.",
+#             "error": str(e)
+#         }), 500
 
 
 
