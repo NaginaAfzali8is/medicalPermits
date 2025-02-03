@@ -153,13 +153,22 @@ def upload_to_s3(file, bucket_name, file_name):
 # # hello 
 
 # Convert Arabic/Persian numerals to English numerals
+# def convert_to_english_numerals(input_string):
+#     arabic_to_english = str.maketrans(
+#         '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹',
+#         '01234567890123456789'
+#     )
+#     return input_string.translate(arabic_to_english)
+# Convert Arabic/Persian numerals to English numerals
 def convert_to_english_numerals(input_string):
+    if not isinstance(input_string, str):  # Ensure it's a string
+        input_string = str(input_string)
+    
     arabic_to_english = str.maketrans(
         '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹',
         '01234567890123456789'
     )
     return input_string.translate(arabic_to_english)
-
 
 # get ref status 
 @app.route('/getStatus', methods=['GET'])
