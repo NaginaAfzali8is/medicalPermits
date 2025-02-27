@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Requests List</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Patient Name</th>
+            <th>Position</th>
+            <th>Department</th>
+            <th>Phone Number</th>
+            <th>Email Address</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if requests %}
+        {% for request in requests %}
+        <tr>
+            <td>{{ request['patient_name'] }}</td>
+            <td>{{ request['position'] }}</td>
+            <td>{{ request['department'] }}</td>
+            <td>{{ request['phone_number'] }}</td>
+            <td>{{ request['email_address'] }}</td>
+            <td>
+                <a href="/edit/{{ request['passport_no'] }}" class="btn btn-warning btn-sm">Edit</a>
+                <a href="/delete/{{ request['passport_no'] }}" class="btn btn-danger btn-sm">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+<a href="/createForm" class="btn btn-primary">Add New Request</a>
+{% endblock %}
