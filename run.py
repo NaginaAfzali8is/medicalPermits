@@ -787,8 +787,8 @@ def getUserData(passport_no):
     return jsonify(data), 200
 
 
-@app.route('/update/<string:passport_no>', methods=['POST'])
-def update_request(passport_no):
+@app.route('/update/<string:reference_number>', methods=['POST'])
+def update_request(reference_number):
     try:
         # Parse JSON data from the request body
         update_data = request.get_json()
@@ -796,8 +796,8 @@ def update_request(passport_no):
         if not update_data:
             return jsonify({"error": "No data provided"}), 400
 
-        # Remove 'passport_no' from the update data if present
-        update_data.pop('passport_no', None)
+        # Remove 'reference_number' from the update data if present
+        update_data.pop('reference_number', None)
 
         # Check if 'rejectReason' is part of the update data
         if 'rejectReason' in update_data:
@@ -807,7 +807,7 @@ def update_request(passport_no):
 
         # Perform the update in the database
         result = models.HealthPermitForm.update_one(
-            {'passport_no': passport_no},
+            {'reference_number': reference_number},
             {'$set': update_data}
         )
 
@@ -816,12 +816,12 @@ def update_request(passport_no):
             return jsonify({
                 "message": "Update successful",
                 "updated_fields": update_data,
-                "passport_no": passport_no
+                "reference_number": reference_number
             }), 200
         else:
             return jsonify({
-                "message": "No document found with the provided passport_no, or no changes were made",
-                "passport_no": passport_no
+                "message": "No document found with the provided reference_number, or no changes were made",
+                "reference_number": reference_number
             }), 404
 
     except Exception as e:
